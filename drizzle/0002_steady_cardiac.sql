@@ -1,0 +1,1 @@
+ALTER TABLE `settings` MODIFY COLUMN `thankYouMessage` varchar(500) NOT NULL DEFAULT 'Masukan Anda membantu kami meningkatkan kualitas layanan.';

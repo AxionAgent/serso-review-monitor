@@ -1,28 +1,147 @@
 import { COOKIE_NAME } from "@shared/const";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import {
+  createBranch,
+  createQRCode,
+  createReview,
+  createTeam,
+  dashboardData,
+  exportReviews,
+  findActiveQR,
+  findReviewsBySearch,
+  getReviewDetail,
+  getSettings,
+  isSuperAdmin,
+  listAlerts,
+  listBranches,
+  listQRCodes,
+  listReviews,
+  listTeams,
+  resolveAlert,
+  scopedBranchId,
+  toggleBranch,
+  toggleQRCode,
+  updateReviewStatus,
+} from "./db";
+
+const statusSchema = z.enum(["new", "reviewed", "resolved", "archived"]);
+const dateFilters = z.object({
+  branchId: z.number().int().positive().optional(),
+  qrCodeId: z.number().int().positive().optional(),
+  teamId: z.number().int().positive().optional(),
+  status: statusSchema.optional(),
+  search: z.string().max(120).optional(),
+  rating: z.enum(["low", "high"]).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+function forbidden(message = "Anda tidak memiliki akses ke data ini."): never {
+  throw new TRPCError({ code: "FORBIDDEN", message });
+}
+function assertBranchScope(user: NonNullable<Parameters<typeof scopedBranchId>[0]>, branchId: number) {
+  const scoped = scopedBranchId(user);
+  if (scoped !== undefined && scoped !== branchId) forbidden();
+}
+function assertWritable(user: NonNullable<Parameters<typeof scopedBranchId>[0]>) {
+  if (user.role === "viewer") forbidden("Akun viewer hanya memiliki akses baca.");
+}
+
+const submissionWindow = new Map<string, number>();
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
-
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  customer: router({
+    context: publicProcedure.input(z.object({ code: z.string().min(1).max(32) })).query(async ({ input }) => {
+      const match = await findActiveQR(input.code);
+      const settings = await getSettings();
+      if (!match) return { state: "invalid" as const, settings };
+      if (match.qr.status !== "active") return { state: "disabled" as const, settings, branch: match.branch, qr: match.qr };
+      if (match.branch.status !== "active") return { state: "inactive_branch" as const, settings, branch: match.branch, qr: match.qr };
+      return { state: "ready" as const, settings, branch: match.branch, qr: match.qr };
+    }),
+    submit: publicProcedure
+      .input(z.object({
+        code: z.string().min(1).max(32),
+        receiptNo: z.string().trim().min(1, "Nomor receipt wajib diisi.").max(80),
+        installationRating: z.number().int().min(1).max(5),
+        groomingRating: z.number().int().min(1).max(5),
+        serviceRating: z.number().int().min(1).max(5),
+        comment: z.string().trim().max(1000).optional(),
+        teamId: z.number().int().positive().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const now = Date.now();
+        const key = `${ctx.req.ip ?? "anonymous"}:${input.code}`;
+        const previous = submissionWindow.get(key) ?? 0;
+        if (now - previous < 15_000) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Mohon tunggu sebentar sebelum mengirim review berikutnya." });
+        submissionWindow.set(key, now);
+        const match = await findActiveQR(input.code);
+        if (!match || match.qr.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "QR Code tidak aktif atau tidak ditemukan." });
+        if (match.branch.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Branch tidak tersedia." });
+        const settings = await getSettings();
+        const result = await createReview({ branchId: match.branch.id, qrCodeId: match.qr.id, receiptNo: input.receiptNo, installationRating: input.installationRating, groomingRating: input.groomingRating, serviceRating: input.serviceRating, comment: input.comment || null, teamId: input.teamId ?? null, status: "new" }, settings.negativeThreshold);
+        if (result.duplicate) return { duplicate: true as const };
+        return { duplicate: false as const, reviewId: result.reviewId };
+      }),
+  }),
+  dashboard: router({
+    overview: publicProcedure.input(dateFilters.default({})).query(({ input, ctx }) => dashboardData(ctx.user, input)),
+  }),
+  admin: router({
+    branches: protectedProcedure.query(({ ctx }) => listBranches(ctx.user)),
+    createBranch: adminProcedure.input(z.object({ name: z.string().trim().min(2).max(160), code: z.string().trim().min(2).max(16).regex(/^[A-Za-z0-9-]+$/), address: z.string().trim().max(255).optional() })).mutation(async ({ input, ctx }) => createBranch({ ...input, code: input.code.toUpperCase(), address: input.address || null, status: "active" }, ctx.user.id)),
+    toggleBranch: adminProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["active", "inactive"]) })).mutation(({ input, ctx }) => toggleBranch(input.id, input.status, ctx.user.id)),
+    teams: protectedProcedure.query(({ ctx }) => listTeams(ctx.user)),
+    createTeam: protectedProcedure.input(z.object({ branchId: z.number().int().positive(), name: z.string().trim().min(2).max(160) })).mutation(async ({ input, ctx }) => {
+      assertWritable(ctx.user);
+      assertBranchScope(ctx.user, input.branchId);
+      return createTeam({ ...input, status: "active" }, ctx.user.id);
+    }),
+    qrCodes: protectedProcedure.query(({ ctx }) => listQRCodes(ctx.user)),
+    createQRCode: protectedProcedure.input(z.object({ branchId: z.number().int().positive(), name: z.string().trim().min(2).max(160) })).mutation(async ({ input, ctx }) => {
+      assertWritable(ctx.user);
+      assertBranchScope(ctx.user, input.branchId);
+      const code = `${input.branchId}-${Date.now().toString(36).slice(-6)}`.toUpperCase();
+      return createQRCode({ branchId: input.branchId, name: input.name, code, url: `/r/${code}`, status: "active", createdBy: ctx.user.id }, ctx.user.id);
+    }),
+    toggleQRCode: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["active", "inactive"]) })).mutation(async ({ input, ctx }) => {
+      assertWritable(ctx.user);
+      const codes = await listQRCodes(ctx.user);
+      const match = codes.find((row) => row.qr.id === input.id);
+      if (!match) forbidden();
+      return toggleQRCode(input.id, input.status, ctx.user.id);
+    }),
+    reviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => listReviews(ctx.user, input)),
+    review: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input, ctx }) => getReviewDetail(ctx.user, input.id)),
+    updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id); }),
+    alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),
+    resolveAlert: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return resolveAlert(ctx.user, input.id, ctx.user.id); }),
+    exportReviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => exportReviews(ctx.user, input)),
+    search: protectedProcedure.input(z.object({ search: z.string().min(2).max(80) })).query(({ input, ctx }) => findReviewsBySearch(ctx.user, input.search)),
+    settings: protectedProcedure.query(() => getSettings()),
+    updateSettings: adminProcedure.input(z.object({ companyName: z.string().min(2).max(160), reviewPageTitle: z.string().min(2).max(160), thankYouMessage: z.string().min(2).max(500), negativeThreshold: z.number().int().min(1).max(3), timezone: z.string().min(2).max(64), primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/) })).mutation(async ({ input }) => {
+      const db = await import("./db").then((module) => module.getDb());
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const settingsTable = (await import("../drizzle/schema")).settings;
+      const rows = await db.select().from(settingsTable).limit(1);
+      if (rows[0]) await db.update(settingsTable).set(input).where((await import("drizzle-orm")).eq(settingsTable.id, rows[0].id));
+      else await db.insert(settingsTable).values(input);
+      return getSettings();
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
