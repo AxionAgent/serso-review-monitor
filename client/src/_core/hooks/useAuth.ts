@@ -20,7 +20,10 @@ export function useAuth(options?: UseAuthOptions) {
       if (!(error instanceof TRPCClientError) || error.data?.code !== "UNAUTHORIZED") throw error;
     } finally {
       utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
+      await utils.auth.me.cancel();
+      if (typeof window !== "undefined") {
+        window.location.href = "/admin";
+      }
     }
   }, [logoutMutation, utils]);
 

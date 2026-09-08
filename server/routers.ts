@@ -97,7 +97,7 @@ export const appRouter = router({
       if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Admin account unavailable." });
       const token = await sdk.createSessionToken(openId, { name: user.name || "Workspace Admin", expiresInMs: ONE_YEAR_MS });
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, sameSite: "lax", maxAge: ONE_YEAR_MS });
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
       return { success: true, user } as const;
     }),
     logout: publicProcedure.mutation(({ ctx }) => {
