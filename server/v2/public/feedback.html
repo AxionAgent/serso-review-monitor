@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Ulasan Anda — Serso v2</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7faf8; color: #0f2f5f; min-height: 100vh; padding: 20px; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .brand-icon { width: 36px; height: 36px; border-radius: 12px; background: #0f2f5f; color: #79a8ff; display: grid; place-items: center; font-weight: bold; font-size: 14px; }
+    .brand-text p:first-child { font-size: 13px; font-weight: 900; color: #0f2f5f; }
+    .brand-text p:last-child { font-size: 9px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; color: #2f6fed; }
+    h1 { font-size: 26px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; color: #0f2f5f; margin-bottom: 6px; }
+    .sub { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 24px; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 22px; padding: 22px 20px; box-shadow: 0 18px 60px -28px rgba(37,99,235,.25); }
+    .field { margin-bottom: 20px; }
+    label { display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+    label .opt { font-weight: 400; color: #94a3b8; font-size: 11px; margin-left: 4px; }
+    input[type="text"], textarea { width: 100%; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 15px; color: #0f2f5f; background: #fff; font-family: inherit; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: #2f6fed; box-shadow: 0 0 0 4px rgba(47,111,237,.10); }
+    textarea { resize: vertical; min-height: 80px; }
+    .stars { display: flex; gap: 6px; flex-direction: row-reverse; justify-content: flex-end; }
+    .stars input { display: none; }
+    .stars label { cursor: pointer; font-size: 30px; color: #e2e8f0; transition: color .15s; padding: 0; margin: 0; }
+    .stars label:hover, .stars label:hover ~ label, .stars input:checked ~ label { color: #fbbf24; }
+    .submit { width: 100%; padding: 14px; background: #0f2f5f; color: white; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 6px; }
+    .submit:disabled { opacity: .5; cursor: not-allowed; }
+    .submit:not(:disabled):hover { background: #1e3a6f; }
+    .note { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 14px; }
+    .thanks { text-align: center; padding: 36px 20px; }
+    .thanks .icon { width: 64px; height: 64px; border-radius: 50%; background: #d1fae5; color: #065f46; display: grid; place-items: center; margin: 0 auto 16px; font-size: 32px; }
+    .thanks h2 { font-size: 22px; font-weight: 800; color: #0f2f5f; margin-bottom: 8px; }
+    .thanks p { font-size: 14px; color: #64748b; line-height: 1.5; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand-icon">SS</div>
+      <div class="brand-text">
+        <p>Service Solution</p>
+        <p>Ulasan v2</p>
+      </div>
+    </header>
+
+    <h1>Bagikan pengalaman Anda</h1>
+    <p class="sub">Ulasan Anda membantu kami meningkatkan kualitas layanan untuk semua pelanggan.</p>
+
+    <div id="formCard" class="card">
+      <div class="field">
+        <label>No. Receipt</label>
+        <input type="text" id="receiptNo" placeholder="cth: A.3.12345" maxlength="80" />
+      </div>
+
+      <div class="field">
+        <label>Hasil Pemasangan / Installation</label>
+        <div class="stars">
+          <input type="radio" name="installation" value="5" id="i5" /><label for="i5">★</label>
+          <input type="radio" name="installation" value="4" id="i4" /><label for="i4">★</label>
+          <input type="radio" name="installation" value="3" id="i3" /><label for="i3">★</label>
+          <input type="radio" name="installation" value="2" id="i2" /><label for="i2">★</label>
+          <input type="radio" name="installation" value="1" id="i1" /><label for="i1">★</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Grooming & Sikap Tim</label>
+        <div class="stars">
+          <input type="radio" name="grooming" value="5" id="g5" /><label for="g5">★</label>
+          <input type="radio" name="grooming" value="4" id="g4" /><label for="g4">★</label>
+          <input type="radio" name="grooming" value="3" id="g3" /><label for="g3">★</label>
+          <input type="radio" name="grooming" value="2" id="g2" /><label for="g2">★</label>
+          <input type="radio" name="grooming" value="1" id="g1" /><label for="g1">★</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Kualitas Pelayanan</label>
+        <div class="stars">
+          <input type="radio" name="service" value="5" id="s5" /><label for="s5">★</label>
+          <input type="radio" name="service" value="4" id="s4" /><label for="s4">★</label>
+          <input type="radio" name="service" value="3" id="s3" /><label for="s3">★</label>
+          <input type="radio" name="service" value="2" id="s2" /><label for="s2">★</label>
+          <input type="radio" name="service" value="1" id="s1" /><label for="s1">★</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Komentar <span class="opt">(opsional)</span></label>
+        <textarea id="comment" placeholder="Ceritakan pengalaman Anda…" maxlength="1000"></textarea>
+      </div>
+
+      <button class="submit" id="submitBtn">Kirim Ulasan</button>
+      <p class="note">Ulasan Anda tidak diklasifikasikan per cabang. Tim admin akan menentukan cabangnya setelahnya.</p>
+    </div>
+
+    <div id="thanksCard" class="card thanks hidden">
+      <div class="icon">✓</div>
+      <h2>Terima kasih!</h2>
+      <p>Masukan Anda sangat berarti bagi kami dan akan ditinjau oleh tim admin.</p>
+    </div>
+  </div>
+
+  <script>
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.addEventListener('click', async () => {
+      const receiptNo = document.getElementById('receiptNo').value.trim();
+      const installation = Number(document.querySelector('input[name="installation"]:checked')?.value || 0);
+      const grooming = Number(document.querySelector('input[name="grooming"]:checked')?.value || 0);
+      const service = Number(document.querySelector('input[name="service"]:checked')?.value || 0);
+      const comment = document.getElementById('comment').value.trim();
+
+      if (!receiptNo) return alert('Mohon isi No. Receipt');
+      if (!installation || !grooming || !service) return alert('Mohon isi semua rating bintang');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Mengirim…';
+
+      try {
+        const res = await fetch('/v2/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ receiptNo, installationRating: installation, groomingRating: grooming, serviceRating: service, comment })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal mengirim');
+        document.getElementById('formCard').classList.add('hidden');
+        document.getElementById('thanksCard').classList.remove('hidden');
+      } catch (err) {
+        alert('Gagal mengirim: ' + err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Kirim Ulasan';
+      }
+    });
+  </script>
+</body>
+</html>

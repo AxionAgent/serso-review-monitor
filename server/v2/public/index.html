@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Serso v2 — Customer Feedback</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7faf8; color: #0f2f5f; min-height: 100vh; padding: 24px; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 40px; height: 40px; border-radius: 14px; background: #0f2f5f; color: #79a8ff; display: grid; place-items: center; font-weight: bold; }
+    .brand-text p:first-child { font-size: 14px; font-weight: 900; color: #0f2f5f; }
+    .brand-text p:last-child { font-size: 10px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; color: #2f6fed; }
+    .badge { display: inline-block; padding: 4px 10px; background: #fff; border: 1px solid #cfe0ff; border-radius: 999px; font-size: 11px; font-weight: bold; color: #2f6fed; margin-bottom: 16px; }
+    h1 { font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -.03em; color: #0f2f5f; margin-bottom: 12px; }
+    p.lead { font-size: 15px; line-height: 1.6; color: #64748b; margin-bottom: 28px; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 28px 24px; box-shadow: 0 18px 60px -28px rgba(37,99,235,.25); margin-bottom: 16px; }
+    .qr-wrap { display: flex; justify-content: center; padding: 16px; background: #f8fafc; border-radius: 16px; }
+    .qr-wrap svg { width: 100%; max-width: 280px; height: auto; }
+    .url { text-align: center; margin-top: 14px; font-size: 13px; color: #2f6fed; font-weight: 600; word-break: break-all; }
+    .hint { text-align: center; margin-top: 8px; font-size: 11px; color: #94a3b8; }
+    .actions { display: flex; gap: 8px; margin-top: 20px; }
+    .btn { flex: 1; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; text-align: center; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-primary { background: #0f2f5f; color: white; border: none; }
+    .btn-secondary { background: white; color: #0f2f5f; border: 1px solid #e2e8f0; }
+    footer { text-align: center; margin-top: 32px; font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">SS</div>
+        <div class="brand-text">
+          <p>Service Solution</p>
+          <p>Review v2</p>
+        </div>
+      </div>
+      <a href="/v2/admin" class="badge" style="text-decoration:none;">Admin</a>
+    </header>
+
+    <div class="card">
+      <div class="badge">QR Universal</div>
+      <h1>Satu QR untuk semua.</h1>
+      <p class="lead">Scan untuk langsung memberi ulasan — tidak perlu pilih cabang. Ulasan masuk tanpa klasifikasi, admin yang menentukan cabangnya.</p>
+
+      <div class="qr-wrap">
+        <img src="/v2/api/qr.svg" alt="QR Code" />
+      </div>
+      <div class="url" id="urlText">…</div>
+      <div class="hint">Atau buka tautan ini langsung dari perangkat</div>
+
+      <div class="actions">
+        <a href="/v2/feedback" class="btn btn-primary">Buka Form Ulasan</a>
+        <button class="btn btn-secondary" onclick="copyUrl()">Salin URL</button>
+      </div>
+    </div>
+
+    <footer>Customer Review v2 · all-in-one QR</footer>
+  </div>
+
+  <script>
+    const baseUrl = window.location.origin + '/v2';
+    document.getElementById('urlText').textContent = baseUrl + '/feedback';
+    function copyUrl() {
+      navigator.clipboard.writeText(baseUrl + '/feedback').then(() => {
+        alert('URL disalin');
+      });
+    }
+  </script>
+</body>
+</html>

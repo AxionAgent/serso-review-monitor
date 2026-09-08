@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin v2 — Serso Review</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7faf8; color: #0f2f5f; min-height: 100vh; padding: 24px; }
+    .wrap { max-width: 920px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    h1 { font-size: 24px; font-weight: 800; color: #0f2f5f; }
+    .sub { font-size: 13px; color: #64748b; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; }
+    .stat .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+    .stat .value { font-size: 24px; font-weight: 800; color: #0f2f5f; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
+    th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #64748b; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+    .pill.new { background: #dbeafe; color: #1d4ed8; }
+    .pill.unassigned { background: #fee2e2; color: #b91c1c; }
+    .pill.assigned { background: #d1fae5; color: #065f46; }
+    .stars { color: #fbbf24; font-size: 14px; }
+    select { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: inherit; background: white; }
+    .empty { padding: 40px 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Admin v2 — Reviews</h1>
+        <p class="sub">Ulasan masuk via QR universal. Assign branch di sini.</p>
+      </div>
+      <a href="/v2" class="sub" style="text-decoration:none;color:#2f6fed;font-weight:700;">← Kembali ke QR</a>
+    </header>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Total</div><div class="value" id="statTotal">0</div></div>
+      <div class="stat"><div class="label">Unassigned</div><div class="value" id="statUnassigned">0</div></div>
+      <div class="stat"><div class="label">Avg Rating</div><div class="value" id="statAvg">–</div></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Receipt</th>
+          <th>Branch</th>
+          <th>Rating</th>
+          <th>Komentar</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="6" class="empty">Memuat…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let branches = [];
+
+    async function loadBranches() {
+      try {
+        const res = await fetch('/v2/api/branches');
+        branches = await res.json();
+      } catch (e) {
+        branches = [];
+      }
+    }
+
+    function overall(install, grooming, service) {
+      return ((install + grooming + service) / 3).toFixed(2);
+    }
+
+    function stars(rating) {
+      const full = Math.round(rating);
+      return '★'.repeat(full) + '☆'.repeat(5 - full);
+    }
+
+    async function load() {
+      const tbody = document.getElementById('tbody');
+      try {
+        const res = await fetch('/v2/api/reviews');
+        const rows = await res.json();
+        document.getElementById('statTotal').textContent = rows.length;
+        document.getElementById('statUnassigned').textContent = rows.filter(r => !r.branch_id).length;
+        if (rows.length) {
+          const avg = rows.reduce((s, r) => s + Number(overall(r.installation_rating, r.grooming_rating, r.service_rating)), 0) / rows.length;
+          document.getElementById('statAvg').textContent = avg.toFixed(2);
+        }
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">Belum ada ulasan masuk.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(r => {
+          const ovr = overall(r.installation_rating, r.grooming_rating, r.service_rating);
+          const date = new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+          const status = !r.branch_id
+            ? '<span class="pill unassigned">Unassigned</span>'
+            : '<span class="pill assigned">Assigned</span>';
+          const branchCell = r.branch_name
+            ? `<strong>${escapeHtml(r.branch_name)}</strong>`
+            : `<select onchange="assign(${r.id}, this.value)"><option value="">— Pilih branch —</option>${branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}</select>`;
+          return `
+            <tr>
+              <td>${date}</td>
+              <td><code>${escapeHtml(r.receipt_no)}</code></td>
+              <td>${branchCell}</td>
+              <td><span class="stars">${stars(ovr)}</span> ${ovr}</td>
+              <td style="max-width:280px;">${r.comment ? escapeHtml(r.comment).slice(0, 120) : '<span style="color:#94a3b8;">—</span>'}</td>
+              <td>${status}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">Gagal memuat: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function assign(reviewId, branchId) {
+      if (!branchId) return;
+      try {
+        const res = await fetch(`/v2/api/reviews/${reviewId}/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ branchId: Number(branchId) })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal assign');
+        load();
+      } catch (err) {
+        alert('Gagal assign: ' + err.message);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'''})[c]);
+    }
+
+    loadBranches().then(load);
+    setInterval(() => { loadBranches().then(load); }, 10000);
+  </script>
+</body>
+</html>

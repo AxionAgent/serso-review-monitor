@@ -44,5 +44,44 @@ services:
       BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY:-}
     command: ["sh", "-c", "pnpm exec drizzle-kit migrate && node dist/index.js"]
 
+  # v2 — QR all-in-one, isolated DB
+  db-v2:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE_V2:-serso_v2}
+      MYSQL_USER: ${MYSQL_USER_V2:-serso_v2}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD_V2:?Set MYSQL_PASSWORD_V2}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_v2_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app-v2:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db-v2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9312/healthz | grep -q ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${PORT_V2:-9312}:9312"
+    environment:
+      NODE_ENV: production
+      PORT_V2: 9312
+      DATABASE_URL_V2: mysql://${MYSQL_USER_V2}:${MYSQL_PASSWORD_V2}@db-v2:3306/${MYSQL_DATABASE_V2:-serso_v2}
+      DATABASE_URL_V1: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE:-serso}
+      V2_PUBLIC_BASE_URL: ${V2_PUBLIC_BASE_URL:-https://review.kemscloud.web.id/v2}
+    command: ["sh", "-c", "node dist/v2/server.js"]
+
 volumes:
   mysql_data:
+  mysql_v2_data:

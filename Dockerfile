@@ -18,6 +18,10 @@ COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 COPY --from=build /app/dist ./dist
+# v2 static UI (esbuild bundle tdk meng-copy public dir)
+COPY --from=build /app/server/v2/public ./dist/v2/public
+# pastikan readable oleh runtime USER node
+RUN chown -R node:node /app/dist
 # drizzle-kit migrate (compose entrypoint) needs the config + migration SQL
 COPY --from=build /app/drizzle.config.ts ./
 COPY --from=build /app/drizzle ./drizzle
