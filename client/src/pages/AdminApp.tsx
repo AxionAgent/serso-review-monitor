@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { QRCodeSVG } from "qrcode.react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import * as XLSX from "xlsx";
 import { Bell, Building2, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -197,6 +198,8 @@ function ReviewsPage() {
   const [pageSize, setPageSize] = useState(10);
   const [selected, setSelected] = useState<number[]>([]);
   const [detailReviewId, setDetailReviewId] = useState<number | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"xlsx" | "ods" | "csv">("xlsx");
 
   const { data: reviewsResponse, isLoading } = trpc.admin.reviews.useQuery({ search: search || undefined, status, branchId, page, pageSize });
   const reviews = reviewsResponse?.items ?? [];
@@ -222,18 +225,33 @@ function ReviewsPage() {
   if (isLoading) return <Loading />;
   const canDelete = currentUser?.role === "super_admin";
   const refresh = () => { setSelected([]); utils.admin.reviews.invalidate(); utils.dashboard.overview.invalidate(); };
-  const download = async () => {
+  const download = async (format: "xlsx" | "ods" | "csv") => {
     try {
+      setExportOpen(false);
       const result = await exportQuery.refetch();
-      if (result.data) {
-        const blob = new Blob([result.data], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "reviews-export.csv";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-      }
+      const rows = result.data;
+      if (!rows) return;
+      const label = (v: unknown) => String(v ?? "");
+      const data = rows.map((row) => ({
+        "Tanggal": label(row.date).slice(0, 10),
+        "No. Receipt": label(row.receiptNo),
+        "Branch": label(row.branchName),
+        "Kode Branch": label(row.branchCode),
+        "QR": label(row.qrName),
+        "Tim": label(row.teamName),
+        "Pemasangan": row.installationRating,
+        "Grooming": row.groomingRating,
+        "Pelayanan": row.serviceRating,
+        "Overall": Number(row.overall).toFixed(2),
+        "Komentar": label(row.comment),
+        "Status": label(row.status),
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 20 }, { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 50 }, { wch: 10 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Reviews");
+      const ext = format === "xlsx" ? "xlsx" : format === "ods" ? "ods" : "csv";
+      XLSX.writeFile(wb, `reviews-export.${ext}`, { compression: true });
     } catch {
       // export failed
     }
@@ -243,7 +261,7 @@ function ReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeading eyebrow="Voice of customer" title="Reviews" subtitle="Review every customer signal and turn feedback into action." action={<div className="flex flex-wrap gap-2"><button onClick={download} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/75 px-4 text-sm font-bold text-slate-700"><Download className="h-4 w-4" /> Export CSV</button>{canDelete ? <><button disabled={!selected.length || deleteOne.isPending} onClick={removeSelected} className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-600 disabled:opacity-40"><Trash2 className="h-4 w-4" /> Delete selected</button><button disabled={deleteAll.isPending} onClick={removeAll} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-bold text-white disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete all</button></> : null}</div>} />
+      <PageHeading eyebrow="Voice of customer" title="Reviews" subtitle="Review every customer signal and turn feedback into action." action={<div className="flex flex-wrap gap-2"><div className="relative"><button onClick={() => setExportOpen(!exportOpen)} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/75 px-4 text-sm font-bold text-slate-700"><Download className="h-4 w-4" /> Export <ChevronDown className={`h-4 w-4 transition ${exportOpen ? "rotate-180" : ""}`} /></button>{exportOpen ? <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl"><button onClick={() => { setExportFormat("xlsx"); download("xlsx"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-emerald-600" /> XLSX (.xlsx)</button><button onClick={() => { setExportFormat("ods"); download("ods"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-orange-500" /> ODS (.ods)</button><button onClick={() => { setExportFormat("csv"); download("csv"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-blue-500" /> CSV (.csv)</button></div> : null}</div>{canDelete ? <><button disabled={!selected.length || deleteOne.isPending} onClick={removeSelected} className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-600 disabled:opacity-40"><Trash2 className="h-4 w-4" /> Delete selected</button><button disabled={deleteAll.isPending} onClick={removeAll} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-bold text-white disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete all</button></> : null}</div>} />
       <div className="flex flex-wrap gap-3 rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]">
         <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3">
           <Search className="h-4 w-4 text-slate-400" />

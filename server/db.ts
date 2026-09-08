@@ -403,19 +403,20 @@ export async function dashboardData(user: ScopeUser, input: { branchId?: number;
 
 export async function exportReviews(user: ScopeUser, input: Parameters<typeof filterRows>[1] = {}) {
   const allRows = filterRows(await getJoinedReviews(user), input);
-  const rows = allRows.map(({ review, branch, qr, team }) => ({
-    ...review,
+  return allRows.map(({ review, branch, qr, team }) => ({
+    date: review.createdAt.toISOString(),
+    receiptNo: review.receiptNo,
     branchName: branch.name,
     branchCode: branch.code,
     qrName: qr?.name ?? "Direct",
     teamName: team?.name ?? "Unassigned",
+    installationRating: review.installationRating,
+    groomingRating: review.groomingRating,
+    serviceRating: review.serviceRating,
     overall: overallRating(review),
+    comment: review.comment ?? "",
+    status: review.status,
   }));
-  const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
-  return [
-    ["Date", "Receipt", "Branch", "QR", "Installation", "Grooming", "Service", "Overall", "Comment", "Status"].map(escape).join(","),
-    ...rows.map((row) => [row.createdAt.toISOString(), row.receiptNo, row.branchName, row.qrName, row.installationRating, row.groomingRating, row.serviceRating, row.overall, row.comment ?? "", row.status].map(escape).join(",")),
-  ].join("\n");
 }
 
 export async function findReviewsBySearch(user: ScopeUser, search: string) {
