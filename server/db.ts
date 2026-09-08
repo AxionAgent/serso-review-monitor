@@ -324,6 +324,9 @@ export async function updateReviewStatus(user: ScopeUser, id: number, status: "n
   if (!detail) throw new Error("Review not found");
   const db = await requireDb();
   await db.update(reviews).set({ status }).where(eq(reviews.id, id));
+  if (status === "resolved") {
+    await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date() }).where(and(eq(reviewAlerts.reviewId, id), eq(reviewAlerts.status, "open")));
+  }
   await createAuditLog({ userId, action: `Changed review status to ${status}`, targetType: "review", targetId: id });
   return { success: true };
 }
@@ -340,8 +343,13 @@ export async function listAlerts(user: ScopeUser, existingRows?: Awaited<ReturnT
 
 export async function resolveAlert(user: ScopeUser, id: number, userId?: number) {
   const db = await requireDb();
+  const alertList = await db.select().from(reviewAlerts).where(eq(reviewAlerts.id, id)).limit(1);
+  const targetAlert = alertList[0];
   await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date() }).where(eq(reviewAlerts.id, id));
-  await createAuditLog({ userId, action: "Resolved review alert", targetType: "review_alert", targetId: id });
+  if (targetAlert?.reviewId) {
+    await db.update(reviews).set({ status: "resolved" }).where(eq(reviews.id, targetAlert.reviewId));
+  }
+  await createAuditLog({ userId, action: "Resolved review alert & updated review status", targetType: "review_alert", targetId: id });
   return { success: true };
 }
 
