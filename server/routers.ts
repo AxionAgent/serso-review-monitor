@@ -38,6 +38,7 @@ import {
   toggleBranch,
   toggleQRCode,
   updateReviewStatus,
+  assignReview,
 } from "./db";
 import { settings as settingsTable } from "../drizzle/schema";
 
@@ -113,10 +114,11 @@ export const appRouter = router({
     context: publicProcedure.input(z.object({ code: z.string().min(1).max(32) })).query(async ({ input }) => {
       const match = await findActiveQR(input.code);
       const settings = await getSettings();
-      if (!match) return { state: "invalid" as const, settings };
-      const teams = await getBranchActiveTeams(match.branch.id);
-      if (match.qr.status !== "active") return { state: "disabled" as const, settings, branch: match.branch, qr: match.qr, teams };
-      if (match.branch.status !== "active") return { state: "inactive_branch" as const, settings, branch: match.branch, qr: match.qr, teams };
+      if (!match || !match.qr) return { state: "invalid" as const, settings };
+      // V2: QR universal — branch opsional (null). Customer tidak perlu pilih branch.
+      if (match.qr.status !== "active") return { state: "disabled" as const, settings, branch: match.branch, qr: match.qr };
+      if (match.branch && match.branch.status !== "active") return { state: "inactive_branch" as const, settings, branch: match.branch, qr: match.qr };
+      const teams = match.branch ? await getBranchActiveTeams(match.branch.id) : [];
       return { state: "ready" as const, settings, branch: match.branch, qr: match.qr, teams };
     }),
     submit: publicProcedure
@@ -136,10 +138,11 @@ export const appRouter = router({
         if (now - previous < 15_000) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Mohon tunggu sebentar sebelum mengirim review berikutnya." });
         submissionWindow.set(key, now);
         const match = await findActiveQR(input.code);
-        if (!match || match.qr.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "QR Code tidak aktif atau tidak ditemukan." });
-        if (match.branch.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Branch tidak tersedia." });
+        if (!match || !match.qr || match.qr.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "QR Code tidak aktif atau tidak ditemukan." });
+        if (match.branch && match.branch.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Branch tidak tersedia." });
         const settings = await getSettings();
-        const result = await createReview({ branchId: match.branch.id, qrCodeId: match.qr.id, receiptNo: input.receiptNo, installationRating: input.installationRating, groomingRating: input.groomingRating, serviceRating: input.serviceRating, comment: input.comment || null, teamId: input.teamId ?? null, status: "new" }, settings.negativeThreshold);
+        // V2: QR universal → review dibuat tanpa branch (unassigned), admin assign manual
+        const result = await createReview({ branchId: match.branch?.id ?? null, qrCodeId: match.qr.id, receiptNo: input.receiptNo, installationRating: input.installationRating, groomingRating: input.groomingRating, serviceRating: input.serviceRating, comment: input.comment || null, teamId: input.teamId ?? null, status: "new" }, settings.negativeThreshold);
         if (result.duplicate) return { duplicate: true as const };
         return { duplicate: false as const, reviewId: result.reviewId };
       }),
@@ -177,6 +180,11 @@ export const appRouter = router({
     reviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => listReviews(ctx.user, input)),
     review: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input, ctx }) => getReviewDetail(ctx.user, input.id)),
     updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id); }),
+    assignReview: protectedProcedure.input(z.object({ id: z.number().int().positive(), branchId: z.number().int().positive(), teamId: z.number().int().positive().nullable().optional() })).mutation(async ({ input, ctx }) => {
+      assertWritable(ctx.user);
+      assertBranchScope(ctx.user, input.branchId);
+      return assignReview(ctx.user, input.id, input.branchId, input.teamId ?? null, ctx.user.id);
+    }),
     deleteReview: superAdminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteReview(ctx.user, input.id, ctx.user.id)),
     deleteAllReviews: superAdminProcedure.mutation(({ ctx }) => deleteAllReviews(ctx.user.id)),
     alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),

@@ -90,7 +90,7 @@ export async function findActiveQR(code: string) {
   const result = await db
     .select({ qr: qrCodes, branch: branches })
     .from(qrCodes)
-    .innerJoin(branches, eq(qrCodes.branchId, branches.id))
+    .leftJoin(branches, eq(qrCodes.branchId, branches.id))
     .where(eq(qrCodes.code, code.trim().toUpperCase()))
     .limit(1);
   return result[0];
@@ -119,7 +119,7 @@ export async function listQRCodes(user?: ScopeUser) {
   const query = db
     .select({ qr: qrCodes, branchName: branches.name })
     .from(qrCodes)
-    .innerJoin(branches, eq(qrCodes.branchId, branches.id));
+    .leftJoin(branches, eq(qrCodes.branchId, branches.id));
   return query.where(branchId === undefined ? undefined : eq(qrCodes.branchId, branchId)).orderBy(desc(qrCodes.createdAt));
 }
 
@@ -141,7 +141,7 @@ async function getJoinedReviews(user?: ScopeUser) {
   const rows = await db
     .select({ review: reviews, branch: branches, qr: qrCodes, team: teams })
     .from(reviews)
-    .innerJoin(branches, eq(reviews.branchId, branches.id))
+    .leftJoin(branches, eq(reviews.branchId, branches.id))
     .leftJoin(qrCodes, eq(reviews.qrCodeId, qrCodes.id))
     .leftJoin(teams, eq(reviews.teamId, teams.id))
     .where(branchId === undefined ? undefined : eq(reviews.branchId, branchId))
@@ -179,8 +179,8 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
 
   const items = pagedRows.map(({ review, branch, qr, team }) => ({
     ...review,
-    branchName: branch.name,
-    branchCode: branch.code,
+    branchName: branch?.name ?? "Unassigned",
+    branchCode: branch?.code ?? "N/A",
     qrName: qr?.name ?? "Direct",
     teamName: team?.name ?? "Unassigned",
     overall: overallRating(review),
@@ -202,7 +202,7 @@ export async function getReviewDetail(user: ScopeUser, id: number) {
   const rows = await db
     .select({ review: reviews, branch: branches, qr: qrCodes, team: teams })
     .from(reviews)
-    .innerJoin(branches, eq(reviews.branchId, branches.id))
+    .leftJoin(branches, eq(reviews.branchId, branches.id))
     .leftJoin(qrCodes, eq(reviews.qrCodeId, qrCodes.id))
     .leftJoin(teams, eq(reviews.teamId, teams.id))
     .where(and(eq(reviews.id, id), branchId === undefined ? undefined : eq(reviews.branchId, branchId)))
@@ -309,10 +309,11 @@ export async function toggleQRCode(id: number, status: "active" | "inactive", us
 
 export async function createReview(input: InsertReview, threshold: number) {
   const db = await requireDb();
+  // V2 mode (QR universal): branchId null → duplicate check per receiptNo saja
   const recent = await db
     .select({ id: reviews.id })
     .from(reviews)
-    .where(and(eq(reviews.branchId, input.branchId), eq(reviews.receiptNo, input.receiptNo)))
+    .where(input.branchId == null ? eq(reviews.receiptNo, input.receiptNo) : and(eq(reviews.branchId, input.branchId), eq(reviews.receiptNo, input.receiptNo)))
     .limit(1);
   if (recent[0]) return { duplicate: true as const };
 
@@ -343,13 +344,23 @@ export async function updateReviewStatus(user: ScopeUser, id: number, status: "n
   return { success: true };
 }
 
+/** V2: assign review unassigned (branchId NULL) ke branch & tim. */
+export async function assignReview(user: ScopeUser, id: number, branchId: number, teamId: number | null, userId?: number) {
+  const detail = await getReviewDetail(user, id);
+  if (!detail) throw new Error("Review not found");
+  const db = await requireDb();
+  await db.update(reviews).set({ branchId, teamId }).where(eq(reviews.id, id));
+  await createAuditLog({ userId, action: `Assigned review to branch #${branchId}${teamId ? ` / team #${teamId}` : ""}`, targetType: "review", targetId: id });
+  return { success: true };
+}
+
 export async function listAlerts(user: ScopeUser, existingRows?: Awaited<ReturnType<typeof getJoinedReviews>>) {
   const rows = existingRows ?? await getJoinedReviews(user);
   const ids = rows.map(({ review }) => review.id);
   if (!ids.length) return [];
   const db = await requireDb();
   const alerts = await db.select().from(reviewAlerts).where(inArray(reviewAlerts.reviewId, ids)).orderBy(desc(reviewAlerts.createdAt));
-  const index = new Map(rows.map(({ review, branch }) => [review.id, { receiptNo: review.receiptNo, branchName: branch.name, overall: overallRating(review) }]));
+  const index = new Map(rows.map(({ review, branch }) => [review.id, { receiptNo: review.receiptNo, branchName: branch?.name ?? "Unassigned", overall: overallRating(review) }]));
   return alerts.map((alert) => ({ ...alert, ...(index.get(alert.reviewId) ?? {}) }));
 }
 
@@ -366,7 +377,8 @@ export async function resolveAlert(user: ScopeUser, id: number, userId?: number)
 }
 
 export async function dashboardData(user: ScopeUser, input: { branchId?: number; qrCodeId?: number; teamId?: number; startDate?: string; endDate?: string } = {}) {
-  const rows = filterRows(await getJoinedReviews(user), input);
+  // Archived reviews are excluded from analytics/KPI (V2 spec)
+  const rows = filterRows(await getJoinedReviews(user), input).filter(({ review }) => review.status !== "archived");
   const now = new Date();
   const todayKey = now.toISOString().slice(0, 10);
   const monthKey = now.toISOString().slice(0, 7);
@@ -385,7 +397,7 @@ export async function dashboardData(user: ScopeUser, input: { branchId?: number;
     return { date: key.slice(5), count: dayRows.length, average: dayRows.length ? Math.round((dayRows.reduce((sum, row) => sum + overallRating(row.review), 0) / dayRows.length) * 100) / 100 : 0 };
   });
   const aggregate = <T extends { id: number; name: string }>(items: T[]) => items.map((item) => {
-    const itemRows = rows.filter(({ branch, team, qr }) => branch.id === item.id || team?.id === item.id || qr?.id === item.id);
+    const itemRows = rows.filter(({ branch, team, qr }) => branch?.id === item.id || team?.id === item.id || qr?.id === item.id);
     return { id: item.id, name: item.name, reviews: itemRows.length, average: itemRows.length ? Math.round((itemRows.reduce((sum, row) => sum + overallRating(row.review), 0) / itemRows.length) * 100) / 100 : 0, installation: itemRows.length ? Math.round((itemRows.reduce((sum, row) => sum + row.review.installationRating, 0) / itemRows.length) * 100) / 100 : 0, grooming: itemRows.length ? Math.round((itemRows.reduce((sum, row) => sum + row.review.groomingRating, 0) / itemRows.length) * 100) / 100 : 0, service: itemRows.length ? Math.round((itemRows.reduce((sum, row) => sum + row.review.serviceRating, 0) / itemRows.length) * 100) / 100 : 0 };
   });
   const db = await requireDb();
@@ -407,7 +419,7 @@ export async function dashboardData(user: ScopeUser, input: { branchId?: number;
     branchAnalytics: branchesForUser.map((item) => ({ ...aggregate([item])[0], code: item.code })),
     teamAnalytics: teamsForUser.map((item) => ({ ...aggregate([item])[0], branchId: item.branchId })),
     qrAnalytics: qrForUser.map((item) => ({ ...aggregate([item])[0], code: item.code, branchId: item.branchId })),
-    recentReviews: rows.slice(0, 7).map(({ review, branch, qr }) => ({ ...review, branchName: branch.name, qrName: qr?.name ?? "Direct", overall: overallRating(review) })),
+    recentReviews: rows.slice(0, 7).map(({ review, branch, qr }) => ({ ...review, branchName: branch?.name ?? "Unassigned", qrName: qr?.name ?? "Direct", overall: overallRating(review) })),
     alerts: alertRows.slice(0, 8),
     alertSummary: { critical: alertRows.filter((a) => a.status === "open" && a.severity === "critical").length, attention: alertRows.filter((a) => a.status === "open" && a.severity === "attention").length, resolved: alertRows.filter((a) => a.status === "resolved").length },
   };
@@ -418,8 +430,8 @@ export async function exportReviews(user: ScopeUser, input: Parameters<typeof fi
   return allRows.map(({ review, branch, qr, team }) => ({
     date: review.createdAt.toISOString(),
     receiptNo: review.receiptNo,
-    branchName: branch.name,
-    branchCode: branch.code,
+    branchName: branch?.name ?? "Unassigned",
+    branchCode: branch?.code ?? "N/A",
     qrName: qr?.name ?? "Direct",
     teamName: team?.name ?? "Unassigned",
     installationRating: review.installationRating,

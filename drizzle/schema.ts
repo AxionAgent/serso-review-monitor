@@ -74,7 +74,7 @@ export const reviews = mysqlTable(
   "reviews",
   {
     id: int("id").autoincrement().primaryKey(),
-    branchId: int("branchId").notNull(),
+    branchId: int("branchId"),
     qrCodeId: int("qrCodeId"),
     teamId: int("teamId"),
     receiptNo: varchar("receiptNo", { length: 80 }).notNull(),

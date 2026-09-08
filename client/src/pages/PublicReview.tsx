@@ -71,7 +71,7 @@ export default function PublicReview() {
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.22em] text-[#2f6fed]">Review terkirim</p>
             <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-900">Terima kasih!</h1>
             <p className="mx-auto max-w-sm text-base leading-7 text-slate-500">{data.settings.thankYouMessage}</p>
-            <div className="mt-8 rounded-2xl bg-slate-50 p-4 text-left text-sm text-slate-600"><span className="font-semibold text-slate-900">Branch:</span> {data.branch.name}</div>
+            <div className="mt-8 rounded-2xl bg-slate-50 p-4 text-left text-sm text-slate-600"><span className="font-semibold text-slate-900">Branch:</span> {data.branch?.name ?? "QR Universal"}</div>
           </div>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function PublicReview() {
           <div className="bg-[#0f2f5f] px-6 py-8 text-white sm:px-9">
             <div className="mb-7 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/75 backdrop-blur-xl/10"><MessageCircle className="h-5 w-5" /></div><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">Customer feedback</p><p className="text-sm text-white/70">Kami ingin mendengar pengalaman Anda</p></div></div>
             <h1 className="max-w-sm text-3xl font-bold leading-tight tracking-tight">{data.settings.reviewPageTitle}</h1>
-            <div className="mt-6 flex items-center gap-2 text-sm text-white/80"><Store className="h-4 w-4" /><span>Branch: <strong className="text-white">{data.branch.name}</strong></span></div>
+            <div className="mt-6 flex items-center gap-2 text-sm text-white/80"><Store className="h-4 w-4" /><span>Branch: <strong className="text-white">{data.branch?.name ?? "QR Universal"}</strong></span></div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-8 p-6 sm:p-9">
             <div className="rounded-2xl border border-[#dbe7ff] bg-[#f7faff] p-4"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6fed]" /><div><p className="text-sm font-semibold text-slate-800">Feedback Anda aman bersama kami</p><p className="mt-1 text-xs leading-5 text-slate-500">Informasi branch terhubung otomatis dari QR Code yang Anda scan.</p></div></div></div>

@@ -71,6 +71,22 @@ function OverviewPage() {
 function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: number; onClose: () => void; onStatusChange: () => void }) {
   const { data: detail, isLoading } = trpc.admin.review.useQuery({ id: reviewId });
   const update = trpc.admin.updateReviewStatus.useMutation();
+  const assign = trpc.admin.assignReview.useMutation();
+  const { data: branches } = trpc.admin.branches.useQuery();
+  const { data: teams } = trpc.admin.teams.useQuery();
+  const [assignBranchId, setAssignBranchId] = useState<number | undefined>();
+  const [assignTeamId, setAssignTeamId] = useState<number | undefined>();
+
+  useEffect(() => {
+    if (detail?.branchId) setAssignBranchId(detail.branchId);
+    if (detail?.teamId) setAssignTeamId(detail.teamId);
+  }, [detail?.branchId, detail?.teamId]);
+
+  const assignableTeams = teams?.filter((team) => team.branchId === assignBranchId) ?? [];
+  const saveAssign = () => {
+    if (!assignBranchId) return;
+    assign.mutate({ id: reviewId, branchId: assignBranchId, teamId: assignTeamId }, { onSuccess: () => onStatusChange() });
+  };
 
   if (isLoading || !detail) {
     return (
@@ -83,7 +99,7 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
     );
   }
 
-  const handleStatus = (status: "new" | "reviewed" | "resolved" | "archived") => {
+  const handleStatus = (status: "new" | "resolved" | "archived") => {
     update.mutate({ id: detail.id, status }, { onSuccess: () => onStatusChange() });
   };
 
@@ -166,10 +182,33 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
           </div>
         ) : null}
 
+        <div className="rounded-2xl border border-[#dbe7ff] bg-[#f6f9ff] p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#2f6fed]">Assign Branch</h4>
+            <button onClick={saveAssign} disabled={!assignBranchId || assign.isPending} className="rounded-lg bg-[#2f6fed] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40">
+              {assign.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Simpan"}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1"><span className="text-[11px] font-semibold text-slate-500">Branch</span>
+              <select value={assignBranchId ?? ""} onChange={(e) => { setAssignBranchId(e.target.value ? Number(e.target.value) : undefined); setAssignTeamId(undefined); }} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700">
+                <option value="">— Pilih Branch —</option>
+                {branches?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+              </select>
+            </label>
+            <label className="block space-y-1"><span className="text-[11px] font-semibold text-slate-500">Tim (opsional)</span>
+              <select value={assignTeamId ?? ""} onChange={(e) => setAssignTeamId(e.target.value ? Number(e.target.value) : undefined)} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700">
+                <option value="">— Tanpa Tim —</option>
+                {assignableTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+              </select>
+            </label>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
           <span className="text-xs font-semibold text-slate-500">Ubah Status:</span>
           <div className="flex gap-2">
-            {(["new", "reviewed", "resolved", "archived"] as const).map((st) => (
+            {(["new", "resolved", "archived"] as const).map((st) => (
               <button
                 key={st}
                 disabled={detail.status === st || update.isPending}
@@ -192,8 +231,10 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
 
 function ReviewsPage() {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"new" | "reviewed" | "resolved" | "archived" | undefined>();
+  const [status, setStatus] = useState<"new" | "resolved" | "archived" | undefined>();
   const [branchId, setBranchId] = useState<number | undefined>();
+  const [sortKey, setSortKey] = useState<"date" | "rating" | "status">("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selected, setSelected] = useState<number[]>([]);
@@ -205,6 +246,19 @@ function ReviewsPage() {
   const reviews = reviewsResponse?.items ?? [];
   const total = reviewsResponse?.total ?? 0;
   const totalPages = reviewsResponse?.totalPages ?? 1;
+
+  const statusRank: Record<string, number> = { new: 0, resolved: 1, archived: 2 };
+  const sortedReviews = [...reviews].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "date") return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+    if (sortKey === "rating") return (a.overall - b.overall) * dir;
+    return ((statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9)) * dir;
+  });
+  const toggleSort = (key: "date" | "rating" | "status") => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir(key === "date" ? "desc" : "asc"); }
+  };
+  const SortIcon = ({ col }: { col: "date" | "rating" | "status" }) => <span className="ml-1 inline-block text-[9px]">{sortKey === col ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>;
 
   const { data: branches } = trpc.admin.branches.useQuery();
   const { data: currentUser } = trpc.auth.me.useQuery();
@@ -274,7 +328,6 @@ function ReviewsPage() {
         <select value={status ?? ""} onChange={(e) => { setStatus((e.target.value || undefined) as typeof status); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
           <option value="">All statuses</option>
           <option value="new">New</option>
-          <option value="reviewed">Reviewed</option>
           <option value="resolved">Resolved</option>
           <option value="archived">Archived</option>
         </select>
@@ -285,17 +338,17 @@ function ReviewsPage() {
             <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-400">
               <tr>
                 {canDelete ? <th className="w-12 px-5 py-4"><input type="checkbox" checked={reviews.length > 0 && selected.length === reviews.length} onChange={(e) => setSelected(e.target.checked ? reviews.map((review) => review.id) : [])} /></th> : null}
-                <th className="px-5 py-4">Date</th>
+                <th className="px-5 py-4"><button onClick={() => toggleSort("date")} className="inline-flex items-center uppercase tracking-wider hover:text-slate-600">Date<SortIcon col="date" /></button></th>
                 <th className="px-5 py-4">Receipt</th>
                 <th className="px-5 py-4">Branch</th>
-                <th className="px-5 py-4">Rating</th>
+                <th className="px-5 py-4"><button onClick={() => toggleSort("rating")} className="inline-flex items-center uppercase tracking-wider hover:text-slate-600">Rating<SortIcon col="rating" /></button></th>
                 <th className="px-5 py-4">Comment</th>
-                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4"><button onClick={() => toggleSort("status")} className="inline-flex items-center uppercase tracking-wider hover:text-slate-600">Status<SortIcon col="status" /></button></th>
                 <th className="px-5 py-4">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {reviews.map((review) => (
+              {sortedReviews.map((review) => (
                 <tr key={review.id} className="hover:bg-slate-50/70 cursor-pointer" onClick={() => setDetailReviewId(review.id)}>
                   {canDelete ? <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selected.includes(review.id)} onChange={(e) => setSelected((current) => e.target.checked ? [...current, review.id] : current.filter((id) => id !== review.id))} /></td> : null}
                   <td className="whitespace-nowrap px-5 py-4 text-xs text-slate-500">{moneyDate(review.createdAt)}</td>
@@ -309,9 +362,8 @@ function ReviewsPage() {
                       <button onClick={() => setDetailReviewId(review.id)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#2f6fed] hover:text-[#2f6fed]">
                         <Eye className="h-3.5 w-3.5" /> Detail
                       </button>
-                      <select value={review.status} onChange={(e) => update.mutate({ id: review.id, status: e.target.value as "new" | "reviewed" | "resolved" | "archived" }, { onSuccess: () => utils.admin.reviews.invalidate() })} className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600">
+                      <select value={review.status} onChange={(e) => update.mutate({ id: review.id, status: e.target.value as "new" | "resolved" | "archived" }, { onSuccess: () => utils.admin.reviews.invalidate() })} className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600">
                         <option value="new">New</option>
-                        <option value="reviewed">Reviewed</option>
                         <option value="resolved">Resolved</option>
                         <option value="archived">Archived</option>
                       </select>
@@ -373,7 +425,7 @@ function BranchesPage() { const { data: branches, isLoading } = trpc.admin.branc
 
 function TeamsPage() { const { data: teams, isLoading } = trpc.admin.teams.useQuery(); const { data: branches } = trpc.admin.branches.useQuery(); const [open, setOpen] = useState(false); const [name, setName] = useState(""); const [branchId, setBranchId] = useState<number>(); const create = trpc.admin.createTeam.useMutation(); const remove = trpc.admin.deleteTeam.useMutation(); const utils = trpc.useUtils(); if (isLoading || !teams) return <Loading />; return <div className="space-y-6"><PageHeading eyebrow="People & performance" title="Installation teams" subtitle="Understand who is creating the strongest service moments." action={<button onClick={() => setOpen(!open)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white"><Users className="h-4 w-4" /> Add team</button>} />{open ? <FormCard title="Create team" onSubmit={(e) => { e.preventDefault(); if (branchId) create.mutate({ branchId, name }, { onSuccess: () => { setOpen(false); setName(""); utils.admin.teams.invalidate(); } }); }}><Input label="Team name" value={name} onChange={setName} placeholder="Installation Team A" /><label className="block space-y-2 text-sm font-semibold text-slate-700">Branch<select value={branchId ?? ""} onChange={(e) => setBranchId(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white/75 px-3 text-sm font-normal"><option value="">Choose branch</option>{branches?.map((branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}</select></label><button className="h-11 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white">Save team</button></FormCard> : null}<div className="overflow-hidden rounded-2xl border border-white/70 bg-white/75 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Team</th><th className="px-5 py-4">Branch</th><th className="px-5 py-4">Action</th></tr></thead><tbody className="divide-y divide-slate-100">{teams.map((team) => <tr key={team.id}><td className="px-5 py-4 font-semibold text-slate-800">{team.name}</td><td className="px-5 py-4 text-slate-500">{branches?.find((branch) => branch.id === team.branchId)?.name ?? "—"}</td><td className="px-5 py-4"><button onClick={() => { if (window.confirm("Delete this team? Existing reviews will be kept without a team.")) remove.mutate({ id: team.id }, { onSuccess: () => utils.admin.teams.invalidate() }); }} className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">Delete</button></td></tr>)}</tbody></table></div></div>; }
 
-function QRCodesPage() { const { data: qrs, isLoading } = trpc.admin.qrCodes.useQuery(); const { data: branches } = trpc.admin.branches.useQuery(); const [open, setOpen] = useState(false); const [name, setName] = useState(""); const [branchId, setBranchId] = useState<number>(); const create = trpc.admin.createQRCode.useMutation(); const toggle = trpc.admin.toggleQRCode.useMutation(); const remove = trpc.admin.deleteQRCode.useMutation(); const utils = trpc.useUtils(); if (isLoading || !qrs) return <Loading />; const download = (code: string) => { const svg = document.getElementById("qr-" + code); if (!svg) return; const source = new XMLSerializer().serializeToString(svg); const blob = new Blob([source], { type: "image/svg+xml" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = code + ".svg"; a.click(); URL.revokeObjectURL(url); }; return <div className="space-y-6"><PageHeading eyebrow="Offline → online bridge" title="QR codes" subtitle="Every scan keeps the branch context attached to the customer signal." action={<button onClick={() => setOpen(!open)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white"><QrCode className="h-4 w-4" /> Generate QR</button>} />{open ? <FormCard title="Generate a new QR code" onSubmit={(e) => { e.preventDefault(); if (branchId) create.mutate({ branchId, name }, { onSuccess: () => { setOpen(false); setName(""); utils.admin.qrCodes.invalidate(); } }); }}><Input label="QR name" value={name} onChange={setName} placeholder="Review Singkawang" /><label className="block space-y-2 text-sm font-semibold text-slate-700">Branch<select value={branchId ?? ""} onChange={(e) => setBranchId(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white/75 px-3 text-sm font-normal"><option value="">Choose branch</option>{branches?.map((branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}</select></label><button className="h-11 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white">Generate</button></FormCard> : null}<div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{qrs.map(({ qr, branchName }) => <div key={qr.id} className="rounded-2xl border border-white/70 bg-white/75 p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="flex items-start justify-between"><div><p className="font-bold text-slate-900">{qr.name}</p><p className="mt-1 text-xs text-slate-400">{branchName} · <span className="font-semibold text-[#2f6fed]">{qr.code}</span></p></div><StatusBadge status={qr.status === "active" ? "resolved" : "archived"} /></div><div className="my-6 flex justify-center rounded-2xl bg-slate-50 p-5"><QRCodeSVG id={"qr-" + qr.code} value={window.location.origin + "/r/" + qr.code} size={150} level="H" includeMargin /></div><p className="truncate rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">{window.location.origin}/r/{qr.code}</p><div className="mt-4 grid grid-cols-2 gap-2"><button onClick={() => download(qr.code)} className="rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600"><Download className="mr-1 inline h-3.5 w-3.5" /> Download</button><Link href={"/r/" + qr.code} className="rounded-xl border border-slate-200 py-2.5 text-center text-xs font-bold text-slate-600"><ExternalLink className="mr-1 inline h-3.5 w-3.5" /> View</Link></div><div className="mt-2 grid grid-cols-2 gap-2"><button onClick={() => toggle.mutate({ id: qr.id, status: qr.status === "active" ? "inactive" : "active" }, { onSuccess: () => utils.admin.qrCodes.invalidate() })} className="rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white">{qr.status === "active" ? "Disable" : "Activate"}</button><button onClick={() => { if (window.confirm("Delete this QR code? Existing reviews will be kept without a QR source.")) remove.mutate({ id: qr.id }, { onSuccess: () => utils.admin.qrCodes.invalidate() }); }} className="rounded-xl bg-rose-50 py-2.5 text-xs font-bold text-rose-600">Delete</button></div></div>)}</div></div>; }
+function QRCodesPage() { const { data: qrs, isLoading } = trpc.admin.qrCodes.useQuery(); const utils = trpc.useUtils(); if (isLoading || !qrs) return <Loading />; const universal = qrs.find((row) => !row.branchName) ?? qrs[0]; if (!universal) return <div className="space-y-6"><PageHeading eyebrow="Offline → online bridge" title="QR codes" subtitle="Satu QR universal untuk semua branch." /><div className="rounded-2xl border border-white/70 bg-white/75 p-12 text-center text-sm text-slate-400">Belum ada QR universal. Tambahkan satu baris di tabel <code>qr_codes</code> dengan <code>branchId</code> NULL.</div></div>; const download = (code: string) => { const svg = document.getElementById("qr-" + code); if (!svg) return; const source = new XMLSerializer().serializeToString(svg); const blob = new Blob([source], { type: "image/svg+xml" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = code + ".svg"; a.click(); URL.revokeObjectURL(url); }; const { qr } = universal; return <div className="space-y-6"><PageHeading eyebrow="Offline → online bridge" title="QR code" subtitle="Satu QR code universal — pelanggan mengisi review tanpa pilih branch; admin menetapkan branch dari dashboard." /><div className="rounded-2xl border border-white/70 bg-white/75 p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="flex items-start justify-between"><div><p className="font-bold text-slate-900">{qr.name}</p><p className="mt-1 text-xs text-slate-400">Universal · Semua branch · <span className="font-semibold text-[#2f6fed]">{qr.code}</span></p></div><StatusBadge status={qr.status === "active" ? "resolved" : "archived"} /></div><div className="my-6 flex justify-center rounded-2xl bg-slate-50 p-5"><QRCodeSVG id={"qr-" + qr.code} value={window.location.origin + "/r/" + qr.code} size={190} level="H" includeMargin /></div><p className="mx-auto w-fit max-w-full truncate rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">{window.location.origin}/r/{qr.code}</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button onClick={() => download(qr.code)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600"><Download className="h-3.5 w-3.5" /> Download</button><Link href={"/r/" + qr.code} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600"><ExternalLink className="h-3.5 w-3.5" /> Buka Halaman</Link></div><p className="mt-4 text-center text-xs text-slate-400">Cetak & pasang QR ini di lokasi layanan. Setiap pelanggan memindai QR yang sama — admin mengklasifikasikan setiap ulasan secara manual.</p></div></div>; }
 
 function AnalyticsPage() {
   const { data, isLoading } = trpc.dashboard.overview.useQuery({});
