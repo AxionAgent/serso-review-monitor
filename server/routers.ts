@@ -22,6 +22,7 @@ import {
   exportReviews,
   findActiveQR,
   findReviewsBySearch,
+  getBranchActiveTeams,
   getDb,
   getReviewDetail,
   getSettings,
@@ -111,9 +112,10 @@ export const appRouter = router({
       const match = await findActiveQR(input.code);
       const settings = await getSettings();
       if (!match) return { state: "invalid" as const, settings };
-      if (match.qr.status !== "active") return { state: "disabled" as const, settings, branch: match.branch, qr: match.qr };
-      if (match.branch.status !== "active") return { state: "inactive_branch" as const, settings, branch: match.branch, qr: match.qr };
-      return { state: "ready" as const, settings, branch: match.branch, qr: match.qr };
+      const teams = await getBranchActiveTeams(match.branch.id);
+      if (match.qr.status !== "active") return { state: "disabled" as const, settings, branch: match.branch, qr: match.qr, teams };
+      if (match.branch.status !== "active") return { state: "inactive_branch" as const, settings, branch: match.branch, qr: match.qr, teams };
+      return { state: "ready" as const, settings, branch: match.branch, qr: match.qr, teams };
     }),
     submit: publicProcedure
       .input(z.object({

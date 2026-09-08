@@ -31,6 +31,7 @@ export default function PublicReview() {
   const { data, isLoading, error } = trpc.customer.context.useQuery({ code }, { retry: false });
   const submit = trpc.customer.submit.useMutation();
   const [receiptNo, setReceiptNo] = useState("");
+  const [teamId, setTeamId] = useState<number | undefined>();
   const [installation, setInstallation] = useState(0);
   const [grooming, setGrooming] = useState(0);
   const [service, setService] = useState(0);
@@ -52,7 +53,7 @@ export default function PublicReview() {
       setClientError("Lengkapi nomor receipt dan seluruh rating sebelum mengirim.");
       return;
     }
-    submit.mutate({ code, receiptNo, installationRating: installation, groomingRating: grooming, serviceRating: service, comment: comment || undefined }, {
+    submit.mutate({ code, receiptNo, installationRating: installation, groomingRating: grooming, serviceRating: service, comment: comment || undefined, teamId }, {
       onSuccess: (result) => {
         if (result.duplicate) setClientError("Review untuk receipt ini sudah pernah dikirim.");
         else setSubmitted(true);
@@ -93,6 +94,21 @@ export default function PublicReview() {
           <form onSubmit={handleSubmit} className="space-y-8 p-6 sm:p-9">
             <div className="rounded-2xl border border-[#dbe7ff] bg-[#f7faff] p-4"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6fed]" /><div><p className="text-sm font-semibold text-slate-800">Feedback Anda aman bersama kami</p><p className="mt-1 text-xs leading-5 text-slate-500">Informasi branch terhubung otomatis dari QR Code yang Anda scan.</p></div></div></div>
             <label className="block space-y-3"><span className="text-sm font-semibold text-slate-800">No. Receipt</span><input value={receiptNo} onChange={(event) => setReceiptNo(event.target.value)} placeholder="Contoh: INV-123456" className="h-13 w-full rounded-2xl border border-slate-200 bg-white/75 backdrop-blur-xl px-4 text-base outline-none transition focus:border-[#2f6fed] focus:ring-4 focus:ring-[#2f6fed]/10" /></label>
+            {data.teams && data.teams.length > 0 ? (
+              <label className="block space-y-3">
+                <span className="text-sm font-semibold text-slate-800">Tim Instalasi <span className="font-normal text-slate-400">(opsional)</span></span>
+                <select
+                  value={teamId ?? ""}
+                  onChange={(e) => setTeamId(e.target.value ? Number(e.target.value) : undefined)}
+                  className="h-13 w-full rounded-2xl border border-slate-200 bg-white/75 backdrop-blur-xl px-4 text-base text-slate-700 outline-none transition focus:border-[#2f6fed] focus:ring-4 focus:ring-[#2f6fed]/10"
+                >
+                  <option value="">Pilih Tim yang Mengerjakan (Opsional)</option>
+                  {data.teams.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <div className="space-y-7"><Stars value={installation} onChange={setInstallation} label="Bagaimana hasil pemasangan?" /><Stars value={grooming} onChange={setGrooming} label="Bagaimana grooming tim instalasi?" /><Stars value={service} onChange={setService} label="Bagaimana pelayanan tim kami?" /></div>
             <label className="block space-y-3"><span className="text-sm font-semibold text-slate-800">Kritik, saran, atau komentar <span className="font-normal text-slate-400">(opsional)</span></span><textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={4} placeholder="Ceritakan pengalaman Anda..." className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-base outline-none transition focus:border-[#2f6fed] focus:ring-4 focus:ring-[#2f6fed]/10" /></label>
             {clientError ? <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{clientError}</div> : null}

@@ -357,7 +357,138 @@ function TeamsPage() { const { data: teams, isLoading } = trpc.admin.teams.useQu
 
 function QRCodesPage() { const { data: qrs, isLoading } = trpc.admin.qrCodes.useQuery(); const { data: branches } = trpc.admin.branches.useQuery(); const [open, setOpen] = useState(false); const [name, setName] = useState(""); const [branchId, setBranchId] = useState<number>(); const create = trpc.admin.createQRCode.useMutation(); const toggle = trpc.admin.toggleQRCode.useMutation(); const remove = trpc.admin.deleteQRCode.useMutation(); const utils = trpc.useUtils(); if (isLoading || !qrs) return <Loading />; const download = (code: string) => { const svg = document.getElementById("qr-" + code); if (!svg) return; const source = new XMLSerializer().serializeToString(svg); const blob = new Blob([source], { type: "image/svg+xml" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = code + ".svg"; a.click(); URL.revokeObjectURL(url); }; return <div className="space-y-6"><PageHeading eyebrow="Offline → online bridge" title="QR codes" subtitle="Every scan keeps the branch context attached to the customer signal." action={<button onClick={() => setOpen(!open)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white"><QrCode className="h-4 w-4" /> Generate QR</button>} />{open ? <FormCard title="Generate a new QR code" onSubmit={(e) => { e.preventDefault(); if (branchId) create.mutate({ branchId, name }, { onSuccess: () => { setOpen(false); setName(""); utils.admin.qrCodes.invalidate(); } }); }}><Input label="QR name" value={name} onChange={setName} placeholder="Review Singkawang" /><label className="block space-y-2 text-sm font-semibold text-slate-700">Branch<select value={branchId ?? ""} onChange={(e) => setBranchId(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white/75 px-3 text-sm font-normal"><option value="">Choose branch</option>{branches?.map((branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}</select></label><button className="h-11 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white">Generate</button></FormCard> : null}<div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{qrs.map(({ qr, branchName }) => <div key={qr.id} className="rounded-2xl border border-white/70 bg-white/75 p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="flex items-start justify-between"><div><p className="font-bold text-slate-900">{qr.name}</p><p className="mt-1 text-xs text-slate-400">{branchName} · <span className="font-semibold text-[#2f6fed]">{qr.code}</span></p></div><StatusBadge status={qr.status === "active" ? "resolved" : "archived"} /></div><div className="my-6 flex justify-center rounded-2xl bg-slate-50 p-5"><QRCodeSVG id={"qr-" + qr.code} value={window.location.origin + "/r/" + qr.code} size={150} level="H" includeMargin /></div><p className="truncate rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">{window.location.origin}/r/{qr.code}</p><div className="mt-4 grid grid-cols-2 gap-2"><button onClick={() => download(qr.code)} className="rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600"><Download className="mr-1 inline h-3.5 w-3.5" /> Download</button><Link href={"/r/" + qr.code} className="rounded-xl border border-slate-200 py-2.5 text-center text-xs font-bold text-slate-600"><ExternalLink className="mr-1 inline h-3.5 w-3.5" /> View</Link></div><div className="mt-2 grid grid-cols-2 gap-2"><button onClick={() => toggle.mutate({ id: qr.id, status: qr.status === "active" ? "inactive" : "active" }, { onSuccess: () => utils.admin.qrCodes.invalidate() })} className="rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white">{qr.status === "active" ? "Disable" : "Activate"}</button><button onClick={() => { if (window.confirm("Delete this QR code? Existing reviews will be kept without a QR source.")) remove.mutate({ id: qr.id }, { onSuccess: () => utils.admin.qrCodes.invalidate() }); }} className="rounded-xl bg-rose-50 py-2.5 text-xs font-bold text-rose-600">Delete</button></div></div>)}</div></div>; }
 
-function AnalyticsPage() { const { data, isLoading } = trpc.dashboard.overview.useQuery({}); if (isLoading || !data) return <Loading />; const branchRows = [...data.branchAnalytics].sort((a, b) => b.average - a.average); return <div className="space-y-7"><PageHeading eyebrow="Performance intelligence" title="Analytics" subtitle="Compare branch, team, and QR performance from actual review data." /><div className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]"><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6"><div className="mb-6"><p className="text-sm font-bold">Branch performance</p><p className="mt-1 text-xs text-slate-400">Ranked by average customer rating</p></div><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={branchRows} layout="vertical" margin={{ left: 10, right: 12 }}><CartesianGrid horizontal={false} stroke="#edf1ef" /><XAxis type="number" domain={[0, 5]} hide /><YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#64748b" }} width={90} /><Tooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ border: "0", borderRadius: 12 }} /><Bar dataKey="average" fill="#2f6fed" radius={[0, 8, 8, 0]} barSize={28} /></BarChart></ResponsiveContainer></div></div><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6"><p className="text-sm font-bold">Dimension scorecard</p><p className="mt-1 text-xs text-slate-400">What customers are telling you</p><div className="mt-7 space-y-5">{[["Installation", data.dimensions.installation, "bg-[#2f6fed]"], ["Team grooming", data.dimensions.grooming, "bg-[#8bb947]"], ["Service experience", data.dimensions.service, "bg-[#d19b37]"]].map(([label, value, color]) => <div key={label as string}><div className="mb-2 flex justify-between text-sm"><span className="font-semibold text-slate-700">{label}</span><span className="font-bold text-slate-900">{Number(value).toFixed(2)} / 5</span></div><div className="h-3 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Number(value) / 5 * 100}%` }} /></div></div>)}</div></div></div><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="border-b border-slate-100 px-5 py-5"><p className="text-sm font-bold">Branch analytics</p><p className="mt-1 text-xs text-slate-400">Reviews, average rating, and service dimensions</p></div><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Branch</th><th className="px-5 py-4">Reviews</th><th className="px-5 py-4">Avg rating</th><th className="px-5 py-4">Installation</th><th className="px-5 py-4">Grooming</th><th className="px-5 py-4">Service</th></tr></thead><tbody className="divide-y divide-slate-100">{branchRows.map((row) => <tr key={row.id}><td className="px-5 py-4 font-semibold text-slate-800">{row.name}</td><td className="px-5 py-4 text-slate-500">{row.reviews}</td><td className="px-5 py-4 font-bold text-[#2f6fed]">{row.average.toFixed(2)} ★</td><td className="px-5 py-4 text-slate-500">{row.installation.toFixed(2)}</td><td className="px-5 py-4 text-slate-500">{row.grooming.toFixed(2)}</td><td className="px-5 py-4 text-slate-500">{row.service.toFixed(2)}</td></tr>)}</tbody></table></div></div><div className="grid gap-6 lg:grid-cols-2"><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><p className="text-sm font-bold">Best performers</p><p className="mt-1 text-xs text-slate-400">Teams with the strongest customer signal</p><div className="mt-4 space-y-3">{[...data.teamAnalytics].sort((a, b) => b.average - a.average).slice(0, 4).map((team, i) => <div key={team.id} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[#e8f0ff] text-xs font-bold text-[#2f6fed]">0{i + 1}</span><span className="flex-1 text-sm font-semibold text-slate-700">{team.name}</span><span className="font-bold text-amber-500">{team.average.toFixed(2)} ★</span></div>)}</div></div><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><p className="text-sm font-bold">QR performance</p><p className="mt-1 text-xs text-slate-400">Where reviews are coming from</p><div className="mt-4 space-y-3">{[...data.qrAnalytics].sort((a, b) => b.reviews - a.reviews).slice(0, 4).map((qr) => <div key={qr.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100"><QrCode className="h-4 w-4 text-slate-500" /></div><span className="flex-1 text-sm font-semibold text-slate-700">{qr.name}</span><span className="text-right"><b className="block text-sm text-slate-800">{qr.reviews}</b><small className="text-[10px] text-slate-400">reviews</small></span></div>)}</div></div></div></div>; }
+function AnalyticsPage() {
+  const { data, isLoading } = trpc.dashboard.overview.useQuery({});
+  const [view, setView] = useState<"branch" | "team" | "qr">("branch");
+
+  if (isLoading || !data) return <Loading />;
+
+  const rows = view === "branch"
+    ? [...data.branchAnalytics].sort((a, b) => b.average - a.average)
+    : view === "team"
+    ? [...data.teamAnalytics].sort((a, b) => b.average - a.average)
+    : [...data.qrAnalytics].sort((a, b) => b.average - a.average);
+
+  const topBranches = [...data.branchAnalytics].sort((a, b) => b.average - a.average);
+  const topTeams = [...data.teamAnalytics].sort((a, b) => b.average - a.average);
+
+  return (
+    <div className="space-y-7">
+      <PageHeading eyebrow="Performance intelligence" title="Analytics & Leaderboard" subtitle="Bandingkan performa per Cabang, Tim Instalasi, dan QR Code berdasarkan rating aktual." />
+
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
+        <div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold">Performa Ranking ({view === "branch" ? "Per Cabang" : view === "team" ? "Per Tim Instalasi" : "Per QR Code"})</p>
+              <p className="mt-1 text-xs text-slate-400">Urutan berdasarkan rerata skor ulasan pelanggan</p>
+            </div>
+            <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+              <button onClick={() => setView("branch")} className={`rounded-lg px-3 py-1.5 transition ${view === "branch" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>Branches</button>
+              <button onClick={() => setView("team")} className={`rounded-lg px-3 py-1.5 transition ${view === "team" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>Teams</button>
+              <button onClick={() => setView("qr")} className={`rounded-lg px-3 py-1.5 transition ${view === "qr" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>QR Codes</button>
+            </div>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rows} layout="vertical" margin={{ left: 10, right: 12 }}>
+                <CartesianGrid horizontal={false} stroke="#edf1ef" />
+                <XAxis type="number" domain={[0, 5]} hide />
+                <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#64748b" }} width={110} />
+                <Tooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ border: "0", borderRadius: 12 }} />
+                <Bar dataKey="average" fill="#2f6fed" radius={[0, 8, 8, 0]} barSize={26} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
+          <p className="text-sm font-bold">Dimension Scorecard</p>
+          <p className="mt-1 text-xs text-slate-400">Skor rata-rata berdasarkan 3 aspek penilaian utama</p>
+          <div className="mt-7 space-y-6">
+            {[
+              ["Hasil Pemasangan / Installation", data.dimensions.installation, "bg-[#2f6fed]"],
+              ["Grooming & Sikap Tim", data.dimensions.grooming, "bg-[#8bb947]"],
+              ["Kualitas Pelayanan", data.dimensions.service, "bg-[#d19b37]"],
+            ].map(([label, value, color]) => (
+              <div key={label as string}>
+                <div className="mb-2 flex justify-between text-sm">
+                  <span className="font-semibold text-slate-700">{label}</span>
+                  <span className="font-bold text-slate-900">{Number(value).toFixed(2)} / 5.0</span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className={`h-full rounded-full ${color}`} style={{ width: `${(Number(value) / 5) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-900">🏆 Top Performing Branches</p>
+              <p className="mt-0.5 text-xs text-slate-400">Cabang terbaik dengan rating layanan tertinggi</p>
+            </div>
+            <Building2 className="h-5 w-5 text-[#2f6fed]" />
+          </div>
+          <div className="divide-y divide-slate-100">
+            {topBranches.map((b, idx) => (
+              <div key={b.id} className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3">
+                  <span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-bold ${idx === 0 ? "bg-amber-100 text-amber-700" : idx === 1 ? "bg-slate-200 text-slate-700" : idx === 2 ? "bg-amber-800/10 text-amber-800" : "bg-slate-50 text-slate-400"}`}>
+                    #{idx + 1}
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{b.name}</p>
+                    <p className="text-xs text-slate-400">{b.reviews} total review</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-bold text-slate-900">{b.average.toFixed(2)}</span>
+                  <p className="text-[10px] text-amber-400">{stars(b.average)}</p>
+                </div>
+              </div>
+            ))}
+            {!topBranches.length ? <p className="py-4 text-center text-xs text-slate-400">Belum ada data cabang.</p> : null}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-900">⭐ Top Installation Teams</p>
+              <p className="mt-0.5 text-xs text-slate-400">Tim lapangan berkinerja terbaik dari Ulasan Pelanggan</p>
+            </div>
+            <Users className="h-5 w-5 text-[#8bb947]" />
+          </div>
+          <div className="divide-y divide-slate-100">
+            {topTeams.map((t, idx) => (
+              <div key={t.id} className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3">
+                  <span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-bold ${idx === 0 ? "bg-amber-100 text-amber-700" : idx === 1 ? "bg-slate-200 text-slate-700" : idx === 2 ? "bg-amber-800/10 text-amber-800" : "bg-slate-50 text-slate-400"}`}>
+                    #{idx + 1}
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{t.name}</p>
+                    <p className="text-xs text-slate-400">{t.reviews} review terhubung</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-bold text-slate-900">{t.average.toFixed(2)}</span>
+                  <p className="text-[10px] text-amber-400">{stars(t.average)}</p>
+                </div>
+              </div>
+            ))}
+            {!topTeams.length ? <p className="py-4 text-center text-xs text-slate-400">Belum ada data tim yang terhubung ke review.</p> : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SettingsPage() {
   const { data, isLoading } = trpc.admin.settings.useQuery();

@@ -108,6 +108,11 @@ export async function listTeams(user?: ScopeUser) {
   return db.select().from(teams).where(branchId === undefined ? undefined : eq(teams.branchId, branchId)).orderBy(teams.name);
 }
 
+export async function getBranchActiveTeams(branchId: number) {
+  const db = await requireDb();
+  return db.select({ id: teams.id, name: teams.name }).from(teams).where(and(eq(teams.branchId, branchId), eq(teams.status, "active"))).orderBy(teams.name);
+}
+
 export async function listQRCodes(user?: ScopeUser) {
   const db = await requireDb();
   const branchId = scopedBranchId(user);
