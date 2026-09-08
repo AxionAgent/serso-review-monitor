@@ -15,7 +15,7 @@ import path from "path";
 const PORT = parseInt(process.env.PORT_V2 || "9312", 10);
 const DATABASE_URL = process.env.DATABASE_URL_V2 || "";
 // Base URL yang dipakai untuk konten QR — di-build ke /v2/feedback di domain publik
-const PUBLIC_BASE_URL = process.env.V2_PUBLIC_BASE_URL || "https://review.kemscloud.web.id/v2";
+const PUBLIC_BASE_URL = process.env.V2_PUBLIC_BASE_URL || "https://reviewv2.kemscloud.web.id";
 
 if (!DATABASE_URL) {
   console.error("[v2] DATABASE_URL_V2 is required");
@@ -62,6 +62,20 @@ async function ensureTables(conn: mysql.Connection) {
       INDEX (created_at)
     ) ENGINE=InnoDB
   `);
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      company_name VARCHAR(160) NOT NULL DEFAULT 'Service Solution',
+      review_page_title VARCHAR(160) NOT NULL DEFAULT 'Bagikan pengalaman Anda',
+      thank_you_message VARCHAR(500) NOT NULL DEFAULT 'Masukan Anda membantu kami meningkatkan kualitas layanan.',
+      negative_threshold INT NOT NULL DEFAULT 2,
+      timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Jakarta',
+      primary_color VARCHAR(32) NOT NULL DEFAULT '#1d6f63',
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB
+  `);
+  // pastikan ada 1 baris settings
+  await conn.execute("INSERT IGNORE INTO settings (id) VALUES (1)");
 }
 
 async function main() {
@@ -128,6 +142,18 @@ async function main() {
   app.get("/api/branches", async (_req, res) => {
     const [rows] = await conn.execute("SELECT id, code, name FROM branches WHERE status='active' ORDER BY name");
     res.json(rows);
+  });
+
+  // API: settings publik (title, company, thankYou)
+  app.get("/api/settings", async (_req, res) => {
+    const [rows] = (await conn.execute("SELECT review_page_title, company_name, thank_you_message FROM settings LIMIT 1")) as any;
+    if (rows.length === 0) return res.json({});
+    const r = rows[0];
+    res.json({
+      reviewPageTitle: r.review_page_title,
+      companyName: r.company_name,
+      thankYouMessage: r.thank_you_message,
+    });
   });
 
   // API: assign branch ke review (admin manual)

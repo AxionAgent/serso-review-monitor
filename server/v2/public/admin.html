@@ -3,90 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin v2 — Serso Review</title>
+  <title>Admin — Service Solution Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7faf8; color: #0f2f5f; min-height: 100vh; padding: 24px; }
-    .wrap { max-width: 920px; margin: 0 auto; }
-    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-    h1 { font-size: 24px; font-weight: 800; color: #0f2f5f; }
-    .sub { font-size: 13px; color: #64748b; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
-    .stat { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; }
-    .stat .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
-    .stat .value { font-size: 24px; font-weight: 800; color: #0f2f5f; margin-top: 4px; }
-    table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
-    th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #64748b; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-    td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; vertical-align: middle; }
+    body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f7ff; color: #0f2f5f; min-height: 100vh; }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 60px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo { width: 38px; height: 38px; border-radius: 14px; background: #0f2f5f; color: #79a8ff; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+    .brand-name { font-size: 16px; font-weight: 800; color: #0f2f5f; line-height: 1.1; }
+    .brand-sub { font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #2f6fed; }
+    .back-link { font-size: 13px; font-weight: 600; color: #2f6fed; text-decoration: none; }
+    .card { background: #fff; border: 1px solid #eef2f9; border-radius: 24px; box-shadow: 0 20px 50px -30px rgba(47,111,237,.25); overflow: hidden; margin-bottom: 18px; }
+    .card-navy { background: #0f2f5f; padding: 24px 26px; color: #fff; }
+    .card-navy h1 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+    .card-navy p { font-size: 13px; color: rgba(255,255,255,.7); margin-top: 4px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 18px 20px; }
+    .stat .label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+    .stat .value { font-size: 26px; font-weight: 800; color: #0f2f5f; margin-top: 4px; }
+    .table-card { padding: 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 13px 18px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #64748b; background: #f8fafc; border-bottom: 1px solid #eef2f9; }
+    td { padding: 13px 18px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
-    .pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-    .pill.new { background: #dbeafe; color: #1d4ed8; }
+    .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
     .pill.unassigned { background: #fee2e2; color: #b91c1c; }
-    .pill.assigned { background: #d1fae5; color: #065f46; }
-    .stars { color: #fbbf24; font-size: 14px; }
-    select { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: inherit; background: white; }
-    .empty { padding: 40px 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+    .pill.assigned { background: #dcfce7; color: #15803d; }
+    .stars { color: #f59e0b; font-size: 14px; letter-spacing: 1px; }
+    select { padding: 7px 10px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-family: inherit; background: #fff; color: #0f2f5f; outline: none; }
+    select:focus { border-color: #2f6fed; box-shadow: 0 0 0 3px rgba(47,111,237,.1); }
+    .empty { padding: 44px 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+    code { background: #f1f5f9; border-radius: 6px; padding: 2px 7px; font-size: 12px; color: #0f2f5f; }
+    .comment-cell { max-width: 260px; color: #475569; line-height: 1.5; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <div>
-        <h1>Admin v2 — Reviews</h1>
-        <p class="sub">Ulasan masuk via QR universal. Assign branch di sini.</p>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">SS</div>
+        <div>
+          <div class="brand-name">Service Solution</div>
+          <div class="brand-sub">Admin Review v2</div>
+        </div>
       </div>
-      <a href="/v2" class="sub" style="text-decoration:none;color:#2f6fed;font-weight:700;">← Kembali ke QR</a>
-    </header>
-
-    <div class="stats">
-      <div class="stat"><div class="label">Total</div><div class="value" id="statTotal">0</div></div>
-      <div class="stat"><div class="label">Unassigned</div><div class="value" id="statUnassigned">0</div></div>
-      <div class="stat"><div class="label">Avg Rating</div><div class="value" id="statAvg">–</div></div>
+      <a href="/" class="back-link">← Kembali ke QR</a>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Tanggal</th>
-          <th>Receipt</th>
-          <th>Branch</th>
-          <th>Rating</th>
-          <th>Komentar</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="6" class="empty">Memuat…</td></tr>
-      </tbody>
-    </table>
+    <div class="card">
+      <div class="card-navy">
+        <h1>Ulasan Masuk</h1>
+        <p>Ulasan via QR universal. Assign branch untuk yang belum jelas asalnya.</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="label">Total</div><div class="value" id="statTotal">0</div></div>
+        <div class="stat"><div class="label">Unassigned</div><div class="value" id="statUnassigned">0</div></div>
+        <div class="stat"><div class="label">Avg Rating</div><div class="value" id="statAvg">–</div></div>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <table>
+        <thead>
+          <tr><th>Tanggal</th><th>Receipt</th><th>Branch</th><th>Rating</th><th>Komentar</th><th>Status</th></tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="6" class="empty">Memuat…</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script>
     let branches = [];
+    let rowsCache = [];
 
     async function loadBranches() {
       try {
-        const res = await fetch('/v2/api/branches');
+        const res = await fetch('/api/branches');
         branches = await res.json();
-      } catch (e) {
-        branches = [];
-      }
+      } catch (e) { branches = []; }
     }
 
-    function overall(install, grooming, service) {
-      return ((install + grooming + service) / 3).toFixed(2);
+    function overall(i, g, s) { return ((i + g + s) / 3).toFixed(2); }
+    function starsHtml(r) {
+      const full = Math.round(r);
+      return '<span class="stars">' + '★'.repeat(full) + '<span style="color:#e2e8f0;">' + '★'.repeat(5 - full) + '</span></span>';
     }
-
-    function stars(rating) {
-      const full = Math.round(rating);
-      return '★'.repeat(full) + '☆'.repeat(5 - full);
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
     }
 
     async function load() {
       const tbody = document.getElementById('tbody');
       try {
-        const res = await fetch('/v2/api/reviews');
-        const rows = await res.json();
+        const res = await fetch('/api/reviews');
+        rowsCache = await res.json();
+        const rows = rowsCache;
         document.getElementById('statTotal').textContent = rows.length;
         document.getElementById('statUnassigned').textContent = rows.filter(r => !r.branch_id).length;
         if (rows.length) {
@@ -99,33 +114,31 @@
         }
         tbody.innerHTML = rows.map(r => {
           const ovr = overall(r.installation_rating, r.grooming_rating, r.service_rating);
-          const date = new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
-          const status = !r.branch_id
+          const date = new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+          const pill = !r.branch_id
             ? '<span class="pill unassigned">Unassigned</span>'
             : '<span class="pill assigned">Assigned</span>';
           const branchCell = r.branch_name
             ? `<strong>${escapeHtml(r.branch_name)}</strong>`
-            : `<select onchange="assign(${r.id}, this.value)"><option value="">— Pilih branch —</option>${branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}</select>`;
-          return `
-            <tr>
-              <td>${date}</td>
-              <td><code>${escapeHtml(r.receipt_no)}</code></td>
-              <td>${branchCell}</td>
-              <td><span class="stars">${stars(ovr)}</span> ${ovr}</td>
-              <td style="max-width:280px;">${r.comment ? escapeHtml(r.comment).slice(0, 120) : '<span style="color:#94a3b8;">—</span>'}</td>
-              <td>${status}</td>
-            </tr>
-          `;
+            : `<select onchange="assign(${r.id}, this.value)"><option value="">— Pilih branch —</option>${branches.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('')}</select>`;
+          return `<tr>
+            <td style="white-space:nowrap;">${date}</td>
+            <td><code>${escapeHtml(r.receipt_no)}</code></td>
+            <td>${branchCell}</td>
+            <td>${starsHtml(ovr)} ${ovr}</td>
+            <td class="comment-cell">${r.comment ? escapeHtml(r.comment).slice(0, 140) : '<span style="color:#cbd5e1;">—</span>'}</td>
+            <td>${pill}</td>
+          </tr>`;
         }).join('');
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty">Gagal memuat: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">Gagal memuat: ${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
     async function assign(reviewId, branchId) {
       if (!branchId) return;
       try {
-        const res = await fetch(`/v2/api/reviews/${reviewId}/assign`, {
+        const res = await fetch(`/api/reviews/${reviewId}/assign`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ branchId: Number(branchId) })
@@ -136,10 +149,6 @@
       } catch (err) {
         alert('Gagal assign: ' + err.message);
       }
-    }
-
-    function escapeHtml(s) {
-      return String(s || '').replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'''})[c]);
     }
 
     loadBranches().then(load);

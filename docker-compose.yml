@@ -79,7 +79,7 @@ services:
       PORT_V2: 9312
       DATABASE_URL_V2: mysql://${MYSQL_USER_V2}:${MYSQL_PASSWORD_V2}@db-v2:3306/${MYSQL_DATABASE_V2:-serso_v2}
       DATABASE_URL_V1: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE:-serso}
-      V2_PUBLIC_BASE_URL: ${V2_PUBLIC_BASE_URL:-https://review.kemscloud.web.id/v2}
+      V2_PUBLIC_BASE_URL: ${V2_PUBLIC_BASE_URL:-https://reviewv2.kemscloud.web.id}
     command: ["sh", "-c", "node dist/v2/server.js"]
 
 volumes:

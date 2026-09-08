@@ -3,138 +3,232 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>Ulasan Anda — Serso v2</title>
+  <title>Bagikan pengalaman Anda — Service Solution</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7faf8; color: #0f2f5f; min-height: 100vh; padding: 20px; }
-    .wrap { max-width: 480px; margin: 0 auto; }
-    header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-    .brand-icon { width: 36px; height: 36px; border-radius: 12px; background: #0f2f5f; color: #79a8ff; display: grid; place-items: center; font-weight: bold; font-size: 14px; }
-    .brand-text p:first-child { font-size: 13px; font-weight: 900; color: #0f2f5f; }
-    .brand-text p:last-child { font-size: 9px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; color: #2f6fed; }
-    h1 { font-size: 26px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; color: #0f2f5f; margin-bottom: 6px; }
-    .sub { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 24px; }
-    .card { background: white; border: 1px solid #e2e8f0; border-radius: 22px; padding: 22px 20px; box-shadow: 0 18px 60px -28px rgba(37,99,235,.25); }
-    .field { margin-bottom: 20px; }
-    label { display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
-    label .opt { font-weight: 400; color: #94a3b8; font-size: 11px; margin-left: 4px; }
-    input[type="text"], textarea { width: 100%; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 15px; color: #0f2f5f; background: #fff; font-family: inherit; }
-    input[type="text"]:focus, textarea:focus { outline: none; border-color: #2f6fed; box-shadow: 0 0 0 4px rgba(47,111,237,.10); }
-    textarea { resize: vertical; min-height: 80px; }
-    .stars { display: flex; gap: 6px; flex-direction: row-reverse; justify-content: flex-end; }
-    .stars input { display: none; }
-    .stars label { cursor: pointer; font-size: 30px; color: #e2e8f0; transition: color .15s; padding: 0; margin: 0; }
-    .stars label:hover, .stars label:hover ~ label, .stars input:checked ~ label { color: #fbbf24; }
-    .submit { width: 100%; padding: 14px; background: #0f2f5f; color: white; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 6px; }
-    .submit:disabled { opacity: .5; cursor: not-allowed; }
-    .submit:not(:disabled):hover { background: #1e3a6f; }
-    .note { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 14px; }
-    .thanks { text-align: center; padding: 36px 20px; }
-    .thanks .icon { width: 64px; height: 64px; border-radius: 50%; background: #d1fae5; color: #065f46; display: grid; place-items: center; margin: 0 auto 16px; font-size: 32px; }
-    .thanks h2 { font-size: 22px; font-weight: 800; color: #0f2f5f; margin-bottom: 8px; }
-    .thanks p { font-size: 14px; color: #64748b; line-height: 1.5; }
+    body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f7ff; color: #0f2f5f; min-height: 100vh; }
+    .page { max-width: 520px; margin: 0 auto; padding: 20px 16px 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding: 0 4px; }
+    .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #64748b; text-decoration: none; }
+    .back:hover { color: #2f6fed; }
+    .back svg { width: 14px; height: 14px; }
+    .brand-tag { font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #2f6fed; }
+    .card { background: #ffffff; border: 1px solid #eef2f9; border-radius: 30px; box-shadow: 0 24px 70px -36px rgba(47,111,237,.3); overflow: hidden; }
+    .card-navy { background: #0f2f5f; padding: 30px 26px 26px; color: white; position: relative; }
+    .customer-chip { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); border-radius: 999px; padding: 6px 14px 6px 8px; font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 18px; }
+    .customer-chip .ic { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,.16); display: grid; place-items: center; }
+    .customer-chip .ic svg { width: 12px; height: 12px; color: #a5e8c9; }
+    .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #a5e8c9; margin-bottom: 8px; }
+    .card-navy h1 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; margin-bottom: 14px; }
+    .branch-line { display: flex; align-items: center; gap: 7px; font-size: 13px; color: rgba(255,255,255,.75); }
+    .branch-line svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .branch-line strong { color: #fff; }
+    .card-body { padding: 26px; }
+    .safe-note { display: flex; gap: 10px; background: #f7faff; border: 1px solid #dbe7ff; border-radius: 18px; padding: 14px 16px; margin-bottom: 24px; }
+    .safe-note svg { width: 18px; height: 18px; flex-shrink: 0; color: #2f6fed; margin-top: 1px; }
+    .safe-note b { font-size: 13px; color: #1e293b; display: block; }
+    .safe-note span { font-size: 12px; color: #64748b; line-height: 1.5; }
+    .field { margin-bottom: 24px; }
+    label.lbl { display: block; font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+    label.lbl .opt { font-weight: 400; color: #94a3b8; font-size: 12px; margin-left: 4px; }
+    input[type="text"], textarea { width: 100%; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 16px; font-size: 15px; color: #0f2f5f; background: #fff; font-family: inherit; transition: border .15s, box-shadow .15s; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: #2f6fed; box-shadow: 0 0 0 4px rgba(47,111,237,.1); }
+    input::placeholder, textarea::placeholder { color: #a5b0c2; }
+    textarea { resize: vertical; min-height: 90px; }
+    .rating-label { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+    .rating-group { margin-bottom: 26px; }
+    .stars { display: flex; gap: 8px; }
+    .star-btn { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 16px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; transition: all .15s; padding: 0; }
+    .star-btn svg { width: 26px; height: 26px; color: #cbd5e1; transition: all .15s; }
+    .star-btn:hover { border-color: #fcd34d; transform: translateY(-2px); }
+    .star-btn:hover svg { color: #fbbf24; }
+    .star-btn.on { border-color: #fcd34d; background: #fffbeb; }
+    .star-btn.on svg { color: #f59e0b; fill: #fbbf24; }
+    .star-btn:active { transform: scale(.9); }
+    .rating-status { font-size: 12px; color: #94a3b8; margin-top: 8px; }
+    .rating-status b { color: #0f2f5f; }
+    .error-box { display: none; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 16px; padding: 12px 16px; font-size: 13px; font-weight: 500; color: #be123c; margin-bottom: 20px; }
+    .error-box.show { display: block; }
+    .submit { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 16px; background: #2f6fed; color: white; border: none; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 12px 26px -12px rgba(47,111,237,.55); transition: .15s; }
+    .submit svg { width: 18px; height: 18px; }
+    .submit:hover:not(:disabled) { background: #2459c7; }
+    .submit:active:not(:disabled) { transform: scale(.98); }
+    .submit:disabled { opacity: .55; cursor: not-allowed; }
+    .foot-note { text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6; margin-top: 16px; }
+    .thanks { text-align: center; padding: 48px 28px; }
+    .thanks .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: #e8f6ef; color: #16a34a; display: grid; place-items: center; margin: 0 auto 20px; }
+    .thanks .ok-circle svg { width: 32px; height: 32px; }
+    .thanks .up { font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #2f6fed; margin-bottom: 8px; }
+    .thanks h2 { font-size: 30px; font-weight: 800; color: #0f2f5f; margin-bottom: 12px; letter-spacing: -.02em; }
+    .thanks p { font-size: 15px; color: #64748b; line-height: 1.7; max-width: 340px; margin: 0 auto 22px; }
+    .thanks .branch-echo { background: #f7faff; border-radius: 14px; padding: 12px 16px; font-size: 13px; text-align: left; }
+    .thanks .branch-echo b { color: #0f2f5f; }
     .hidden { display: none; }
+    /* SVG star sprite (sama dgn lucide Star) */
+    .star-svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="brand-icon">SS</div>
-      <div class="brand-text">
-        <p>Service Solution</p>
-        <p>Ulasan v2</p>
-      </div>
-    </header>
-
-    <h1>Bagikan pengalaman Anda</h1>
-    <p class="sub">Ulasan Anda membantu kami meningkatkan kualitas layanan untuk semua pelanggan.</p>
-
-    <div id="formCard" class="card">
-      <div class="field">
-        <label>No. Receipt</label>
-        <input type="text" id="receiptNo" placeholder="cth: A.3.12345" maxlength="80" />
-      </div>
-
-      <div class="field">
-        <label>Hasil Pemasangan / Installation</label>
-        <div class="stars">
-          <input type="radio" name="installation" value="5" id="i5" /><label for="i5">★</label>
-          <input type="radio" name="installation" value="4" id="i4" /><label for="i4">★</label>
-          <input type="radio" name="installation" value="3" id="i3" /><label for="i3">★</label>
-          <input type="radio" name="installation" value="2" id="i2" /><label for="i2">★</label>
-          <input type="radio" name="installation" value="1" id="i1" /><label for="i1">★</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Grooming & Sikap Tim</label>
-        <div class="stars">
-          <input type="radio" name="grooming" value="5" id="g5" /><label for="g5">★</label>
-          <input type="radio" name="grooming" value="4" id="g4" /><label for="g4">★</label>
-          <input type="radio" name="grooming" value="3" id="g3" /><label for="g3">★</label>
-          <input type="radio" name="grooming" value="2" id="g2" /><label for="g2">★</label>
-          <input type="radio" name="grooming" value="1" id="g1" /><label for="g1">★</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Kualitas Pelayanan</label>
-        <div class="stars">
-          <input type="radio" name="service" value="5" id="s5" /><label for="s5">★</label>
-          <input type="radio" name="service" value="4" id="s4" /><label for="s4">★</label>
-          <input type="radio" name="service" value="3" id="s3" /><label for="s3">★</label>
-          <input type="radio" name="service" value="2" id="s2" /><label for="s2">★</label>
-          <input type="radio" name="service" value="1" id="s1" /><label for="s1">★</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Komentar <span class="opt">(opsional)</span></label>
-        <textarea id="comment" placeholder="Ceritakan pengalaman Anda…" maxlength="1000"></textarea>
-      </div>
-
-      <button class="submit" id="submitBtn">Kirim Ulasan</button>
-      <p class="note">Ulasan Anda tidak diklasifikasikan per cabang. Tim admin akan menentukan cabangnya setelahnya.</p>
+  <div class="page">
+    <div class="topbar">
+      <a href="/" class="back" id="backLink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        Kembali
+      </a>
+      <span class="brand-tag" id="companyName">Service Solution</span>
     </div>
 
-    <div id="thanksCard" class="card thanks hidden">
-      <div class="icon">✓</div>
-      <h2>Terima kasih!</h2>
-      <p>Masukan Anda sangat berarti bagi kami dan akan ditinjau oleh tim admin.</p>
+    <div class="card">
+      <div class="card-navy">
+        <div class="customer-chip">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          Customer feedback
+        </div>
+        <h1 id="reviewTitle">Bagikan pengalaman Anda</h1>
+        <div class="branch-line" id="branchLine">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M10 20v-6h4v6"/></svg>
+          <span>Ulasan Anda masuk tanpa cabang — tim kami akan menindaklanjuti.</span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="safe-note" id="safeNote">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+          <div><b>Feedback Anda aman bersama kami</b><span>QR universal — tidak terikat cabang tertentu.</span></div>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="receiptNo">No. Receipt</label>
+          <input type="text" id="receiptNo" placeholder="Contoh: INV-123456" maxlength="80" autocomplete="off" />
+        </div>
+
+        <div class="rating-group" data-group="installation">
+          <div class="rating-label">Bagaimana hasil pemasangan?</div>
+          <div class="stars"></div>
+          <div class="rating-status"><b>0</b> / 5 — Pilih rating Anda</div>
+        </div>
+        <div class="rating-group" data-group="grooming">
+          <div class="rating-label">Bagaimana grooming tim instalasi?</div>
+          <div class="stars"></div>
+          <div class="rating-status"><b>0</b> / 5 — Pilih rating Anda</div>
+        </div>
+        <div class="rating-group" data-group="service">
+          <div class="rating-label">Bagaimana pelayanan tim kami?</div>
+          <div class="stars"></div>
+          <div class="rating-status"><b>0</b> / 5 — Pilih rating Anda</div>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="comment">Kritik, saran, atau komentar <span class="opt">(opsional)</span></label>
+          <textarea id="comment" placeholder="Ceritakan pengalaman Anda..." maxlength="1000"></textarea>
+        </div>
+
+        <div class="error-box" id="errorBox"></div>
+
+        <button class="submit" id="submitBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Kirim Review
+        </button>
+        <p class="foot-note">Dengan mengirim review, Anda membantu kami meningkatkan kualitas layanan.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thank you state -->
+  <div class="page hidden" id="thanksPage">
+    <div class="card">
+      <div class="thanks">
+        <div class="ok-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <div class="up">Review terkirim</div>
+        <h2>Terima kasih!</h2>
+        <p id="thanksMsg">Masukan Anda membantu kami meningkatkan kualitas layanan.</p>
+        <div class="branch-echo"><b>QR Universal</b> — ulasan Anda telah kami terima.</div>
+      </div>
     </div>
   </div>
 
   <script>
+    const STAR_SVG = '<svg class="star-svg" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.4 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z"/></svg>';
+    const ratings = { installation: 0, grooming: 0, service: 0 };
+    const groups = document.querySelectorAll('.rating-group');
+
+    // Render star buttons per group
+    groups.forEach(group => {
+      const key = group.dataset.group;
+      const container = group.querySelector('.stars');
+      const status = group.querySelector('.rating-status');
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'star-btn';
+        btn.setAttribute('aria-label', i + ' dari 5 bintang');
+        btn.innerHTML = STAR_SVG;
+        btn.addEventListener('click', () => {
+          ratings[key] = i;
+          container.querySelectorAll('.star-btn').forEach((b, idx) => {
+            b.classList.toggle('on', idx < i);
+          });
+          status.innerHTML = '<b>' + i + '</b> / 5' + (i === 5 ? ' — Luar biasa!' : i === 4 ? ' — Bagus' : i === 3 ? ' — Cukup' : i === 2 ? ' — Kurang' : ' — Sangat kurang');
+        });
+        container.appendChild(btn);
+      }
+    });
+
     const submitBtn = document.getElementById('submitBtn');
+    const errorBox = document.getElementById('errorBox');
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.add('show');
+    }
+
     submitBtn.addEventListener('click', async () => {
+      errorBox.classList.remove('show');
       const receiptNo = document.getElementById('receiptNo').value.trim();
-      const installation = Number(document.querySelector('input[name="installation"]:checked')?.value || 0);
-      const grooming = Number(document.querySelector('input[name="grooming"]:checked')?.value || 0);
-      const service = Number(document.querySelector('input[name="service"]:checked')?.value || 0);
       const comment = document.getElementById('comment').value.trim();
-
-      if (!receiptNo) return alert('Mohon isi No. Receipt');
-      if (!installation || !grooming || !service) return alert('Mohon isi semua rating bintang');
-
+      if (!receiptNo) return showError('Mohon isi No. Receipt');
+      if (!ratings.installation || !ratings.grooming || !ratings.service) return showError('Lengkapi seluruh rating sebelum mengirim.');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Mengirim…';
-
+      submitBtn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Mengirim…';
       try {
-        const res = await fetch('/v2/api/reviews', {
+        const res = await fetch('/api/reviews', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ receiptNo, installationRating: installation, groomingRating: grooming, serviceRating: service, comment })
+          body: JSON.stringify({
+            receiptNo,
+            installationRating: ratings.installation,
+            groomingRating: ratings.grooming,
+            serviceRating: ratings.service,
+            comment: comment || undefined
+          })
         });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal mengirim');
-        document.getElementById('formCard').classList.add('hidden');
-        document.getElementById('thanksCard').classList.remove('hidden');
+        // Tampilkan halaman terima kasih
+        document.querySelector('.page').classList.add('hidden');
+        document.getElementById('thanksPage').classList.remove('hidden');
+        window.scrollTo(0, 0);
       } catch (err) {
-        alert('Gagal mengirim: ' + err.message);
+        showError('Gagal mengirim: ' + err.message);
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Kirim Ulasan';
+        submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Kirim Review';
       }
     });
+
+    // Load settings (title/company) dari API kalau ada
+    (async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const s = await res.json();
+          if (s.reviewPageTitle) document.getElementById('reviewTitle').textContent = s.reviewPageTitle;
+          if (s.companyName) document.getElementById('companyName').textContent = s.companyName;
+          if (s.thankYouMessage) document.getElementById('thanksMsg').textContent = s.thankYouMessage;
+        }
+      } catch (e) { /* default */ }
+    })();
   </script>
 </body>
 </html>
