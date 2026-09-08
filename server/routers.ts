@@ -49,6 +49,8 @@ const dateFilters = z.object({
   rating: z.enum(["low", "high"]).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).max(100).optional(),
 });
 
 function forbidden(message = "Anda tidak memiliki akses ke data ini."): never {

@@ -2,8 +2,8 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { QRCodeSVG } from "qrcode.react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Bell, Building2, ChevronDown, Download, ExternalLink, FileText, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, Users, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Bell, Building2, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, Users, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 
 const navItems = [
@@ -67,12 +67,142 @@ function OverviewPage() {
   return <div className="space-y-7"><PageHeading eyebrow={todayLabel()} title="Good morning, team" subtitle="Here’s the service pulse across every branch." action={<Link href="/admin/qr-codes" className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white shadow-lg shadow-[#2f6fed]/15 transition hover:bg-[#2459c7]"><QrCode className="h-4 w-4" /> Manage QR codes</Link>} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[{ label: "Total reviews", value: data.kpis.total.toLocaleString(), note: `${data.kpis.positive} positif · ${data.kpis.negative} perlu perhatian`, color: "text-[#2f6fed]" }, { label: "Average rating", value: data.kpis.average.toFixed(2), note: "Across all dimensions", color: "text-amber-500", icon: "★" }, { label: "Reviews today", value: data.kpis.today, note: "Live submissions", color: "text-sky-600" }, { label: "This month", value: data.kpis.month.toLocaleString(), note: monthLabel, color: "text-violet-600" }, { label: "Positive reviews", value: data.kpis.positive.toLocaleString(), note: "4.0 rating or higher", color: "text-emerald-600" }, { label: "Needs attention", value: data.kpis.negative.toLocaleString(), note: "Rating 2.0 or lower", color: "text-rose-600" }].map((item) => <div key={item.label} className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] shadow-slate-200/40"><div className="mb-4 flex items-center justify-between"><p className="text-xs font-semibold text-slate-500">{item.label}</p>{item.icon ? <span className="text-amber-400">{item.icon}</span> : null}</div><p className={`text-3xl font-bold tracking-tight ${item.color}`}>{item.value}</p><p className="mt-2 text-[11px] text-slate-400">{item.note}</p></div>)}</div><div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]"><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6"><div className="mb-6 flex items-start justify-between"><div><p className="text-sm font-bold">Review activity</p><p className="mt-1 text-xs text-slate-400">Daily volume and average rating · last 14 days</p></div><div className="flex gap-2 text-[11px] text-slate-400"><span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#2f6fed]" /> Reviews</span><span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#79a8ff]" /> Rating</span></div></div><div className="h-64"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data.trend}><defs><linearGradient id="reviewFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2f6fed" stopOpacity={0.25} /><stop offset="100%" stopColor="#2f6fed" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#edf1ef" /><XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8" }} /><YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8" }} /><YAxis yAxisId="right" orientation="right" domain={[0, 5]} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8" }} /><Tooltip contentStyle={{ border: "0", borderRadius: 12, boxShadow: "0 12px 30px rgba(15,23,42,.12)" }} /><Area yAxisId="left" type="monotone" dataKey="count" stroke="#2f6fed" strokeWidth={3} fill="url(#reviewFill)" /><Area yAxisId="right" type="monotone" dataKey="average" stroke="#79a8ff" strokeWidth={2} fill="none" /></AreaChart></ResponsiveContainer></div></div><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6"><div className="mb-6 flex items-start justify-between"><div><p className="text-sm font-bold">Rating breakdown</p><p className="mt-1 text-xs text-slate-400">How customers score their experience</p></div><Star className="h-4 w-4 fill-amber-400 text-amber-400" /></div><div className="mb-7 grid grid-cols-[auto_1fr] items-center gap-x-5"><div><p className="text-4xl font-bold text-slate-900">{data.dimensions.overall.toFixed(2)}</p><p className="mt-1 text-xs text-slate-400">out of 5.0</p></div><div className="space-y-2">{data.ratingDistribution.map((item) => <div key={item.rating} className="flex items-center gap-2 text-xs"><span className="w-5 text-slate-500">{item.rating}★</span><div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-amber-400" style={{ width: `${item.percentage}%` }} /></div><span className="w-7 text-right text-slate-400">{item.percentage}%</span></div>)}</div></div><div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-5">{[["Installation", data.dimensions.installation], ["Grooming", data.dimensions.grooming], ["Service", data.dimensions.service]].map(([label, value]) => <div key={label as string}><p className="text-[11px] text-slate-400">{label}</p><p className="mt-1 text-lg font-bold text-slate-800">{Number(value).toFixed(2)}</p></div>)}</div></div></div><div className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]"><div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-5 sm:px-6"><div><p className="text-sm font-bold">Latest reviews</p><p className="mt-1 text-xs text-slate-400">Fresh feedback from customers</p></div><Link href="/admin/reviews" className="text-xs font-bold text-[#2f6fed]">View all →</Link></div><div className="divide-y divide-slate-100">{data.recentReviews.slice(0, 5).map((review) => <Link href={`/admin/reviews?id=${review.id}`} key={review.id} className="flex items-center gap-4 px-5 py-4 transition hover:bg-slate-50 sm:px-6"><div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold ${review.overall >= 4 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600"}`}>{review.overall.toFixed(1)}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-800">{review.comment || "No comment"}</p><p className="mt-1 text-xs text-slate-400">{review.branchName} · {review.receiptNo}</p></div><span className="hidden text-xs text-slate-400 sm:block">{moneyDate(review.createdAt)}</span></Link>)}</div></div><div className="rounded-2xl border border-rose-100 bg-[#fffafa] shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="flex items-center justify-between border-b border-rose-100 px-5 py-5"><div><p className="text-sm font-bold text-slate-900">Alert center</p><p className="mt-1 text-xs text-slate-400">Negative reviews to act on</p></div><Link href="/admin/alerts" className="text-xs font-bold text-rose-600">Open alerts →</Link></div><div className="grid grid-cols-3 border-b border-rose-100"><div className="p-4"><p className="text-2xl font-bold text-rose-600">{data.alertSummary.critical}</p><p className="mt-1 text-[11px] text-slate-400">Critical</p></div><div className="border-x border-rose-100 p-4"><p className="text-2xl font-bold text-amber-500">{data.alertSummary.attention}</p><p className="mt-1 text-[11px] text-slate-400">Attention</p></div><div className="p-4"><p className="text-2xl font-bold text-emerald-600">{data.alertSummary.resolved}</p><p className="mt-1 text-[11px] text-slate-400">Resolved</p></div></div><div className="space-y-4 p-5">{data.alerts.filter((alert) => alert.status === "open").slice(0, 3).map((alert) => <Link href={`/admin/reviews?id=${alert.reviewId}`} key={alert.id} className="flex gap-3"><span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-rose-500" /><div><p className="text-sm font-semibold text-slate-700">{alert.receiptNo}</p><p className="mt-1 text-xs text-slate-400">{alert.branchName} · {alert.message}</p></div></Link>)}{!data.alerts.filter((alert) => alert.status === "open").length ? <p className="text-sm text-slate-500">Tidak ada alert saat ini. Semua aman.</p> : null}</div></div></div></div>;
 }
 
+function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: number; onClose: () => void; onStatusChange: () => void }) {
+  const { data: detail, isLoading } = trpc.admin.review.useQuery({ id: reviewId });
+  const update = trpc.admin.updateReviewStatus.useMutation();
+
+  if (isLoading || !detail) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
+        <div className="w-full max-w-lg rounded-2xl bg-white p-8 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#2f6fed]" />
+          <p className="mt-3 text-sm text-slate-500 font-medium">Memuat detail review...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleStatus = (status: "new" | "reviewed" | "resolved" | "archived") => {
+    update.mutate({ id: detail.id, status }, { onSuccess: () => onStatusChange() });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 sm:p-8 shadow-2xl space-y-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="text-xl font-bold text-slate-900">{detail.receiptNo}</span>
+              <StatusBadge status={detail.status} />
+            </div>
+            <p className="mt-1 text-xs text-slate-400">ID Review #{detail.id} · Diterima pada {moneyDate(detail.createdAt)}</p>
+          </div>
+          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 rounded-2xl bg-slate-50 p-4 text-xs">
+          <div>
+            <span className="text-slate-400 font-medium">Branch</span>
+            <p className="font-bold text-slate-800 mt-0.5">{detail.branch?.name ?? "N/A"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 font-medium">Tim Instalasi</span>
+            <p className="font-bold text-slate-800 mt-0.5">{detail.team?.name ?? "Unassigned"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 font-medium">Sumber QR</span>
+            <p className="font-bold text-slate-800 mt-0.5">{detail.qr?.name ?? "Direct"}</p>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Score & Sub-Rating</h4>
+            <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-amber-700 text-sm font-bold border border-amber-200">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span>Overall {detail.overall.toFixed(2)} / 5.0</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-2xl border border-slate-100 bg-white p-3 text-center shadow-sm">
+              <p className="text-xs text-slate-400 font-semibold">Hasil Pemasangan</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{detail.installationRating}</p>
+              <p className="text-[10px] text-amber-400">{stars(detail.installationRating)}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-3 text-center shadow-sm">
+              <p className="text-xs text-slate-400 font-semibold">Grooming Tim</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{detail.groomingRating}</p>
+              <p className="text-[10px] text-amber-400">{stars(detail.groomingRating)}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-3 text-center shadow-sm">
+              <p className="text-xs text-slate-400 font-semibold">Pelayanan Tim</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{detail.serviceRating}</p>
+              <p className="text-[10px] text-amber-400">{stars(detail.serviceRating)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Komentar & Masukan Pelanggan</h4>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-56 overflow-y-auto">
+            {detail.comment ? detail.comment : <span className="italic text-slate-400">Tidak ada komentar tertulis.</span>}
+          </div>
+        </div>
+
+        {detail.alerts && detail.alerts.length > 0 ? (
+          <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+            <h4 className="text-xs font-bold text-rose-700 uppercase tracking-wider mb-2">Warning Alerts</h4>
+            <div className="space-y-2">
+              {detail.alerts.map((a) => (
+                <div key={a.id} className="text-xs text-rose-600 flex items-center justify-between">
+                  <span>{a.message} ({a.severity})</span>
+                  <span className="font-semibold">{a.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+          <span className="text-xs font-semibold text-slate-500">Ubah Status:</span>
+          <div className="flex gap-2">
+            {(["new", "reviewed", "resolved", "archived"] as const).map((st) => (
+              <button
+                key={st}
+                disabled={detail.status === st || update.isPending}
+                onClick={() => handleStatus(st)}
+                className={`rounded-xl px-3 py-1.5 text-xs font-bold capitalize transition ${
+                  detail.status === st
+                    ? "bg-[#2f6fed] text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReviewsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"new" | "reviewed" | "resolved" | "archived" | undefined>();
   const [branchId, setBranchId] = useState<number | undefined>();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [selected, setSelected] = useState<number[]>([]);
-  const { data: reviews, isLoading } = trpc.admin.reviews.useQuery({ search: search || undefined, status, branchId });
+  const [detailReviewId, setDetailReviewId] = useState<number | null>(null);
+
+  const { data: reviewsResponse, isLoading } = trpc.admin.reviews.useQuery({ search: search || undefined, status, branchId, page, pageSize });
+  const reviews = reviewsResponse?.items ?? [];
+  const total = reviewsResponse?.total ?? 0;
+  const totalPages = reviewsResponse?.totalPages ?? 1;
+
   const { data: branches } = trpc.admin.branches.useQuery();
   const { data: currentUser } = trpc.auth.me.useQuery();
   const update = trpc.admin.updateReviewStatus.useMutation();
@@ -80,7 +210,16 @@ function ReviewsPage() {
   const deleteAll = trpc.admin.deleteAllReviews.useMutation();
   const utils = trpc.useUtils();
   const exportQuery = trpc.admin.exportReviews.useQuery({ search: search || undefined, status, branchId }, { enabled: false });
-  if (isLoading || !reviews) return <Loading />;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get("id");
+    if (idParam && !isNaN(Number(idParam))) {
+      setDetailReviewId(Number(idParam));
+    }
+  }, []);
+
+  if (isLoading) return <Loading />;
   const canDelete = currentUser?.role === "super_admin";
   const refresh = () => { setSelected([]); utils.admin.reviews.invalidate(); utils.dashboard.overview.invalidate(); };
   const download = async () => {
@@ -96,12 +235,118 @@ function ReviewsPage() {
         setTimeout(() => URL.revokeObjectURL(url), 100);
       }
     } catch {
-      // export failed silently — user can retry
+      // export failed
     }
   };
   const removeSelected = async () => { if (!selected.length || !window.confirm("Delete " + selected.length + " selected review(s)?")) return; await Promise.all(selected.map((id) => deleteOne.mutateAsync({ id }))); refresh(); };
   const removeAll = async () => { if (!window.confirm("Delete ALL reviews and their alerts? This cannot be undone.")) return; await deleteAll.mutateAsync(); refresh(); };
-  return <div className="space-y-6"><PageHeading eyebrow="Voice of customer" title="Reviews" subtitle="Review every customer signal and turn feedback into action." action={<div className="flex flex-wrap gap-2"><button onClick={download} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/75 px-4 text-sm font-bold text-slate-700"><Download className="h-4 w-4" /> Export CSV</button>{canDelete ? <><button disabled={!selected.length || deleteOne.isPending} onClick={removeSelected} className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-600 disabled:opacity-40"><Trash2 className="h-4 w-4" /> Delete selected</button><button disabled={deleteAll.isPending} onClick={removeAll} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-bold text-white disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete all</button></> : null}</div>} /><div className="flex flex-wrap gap-3 rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3"><Search className="h-4 w-4 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search receipt or comment" className="h-10 w-full text-sm outline-none" /></div><select value={branchId ?? ""} onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : undefined)} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600"><option value="">All branches</option>{branches?.map((branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}</select><select value={status ?? ""} onChange={(e) => setStatus((e.target.value || undefined) as typeof status)} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600"><option value="">All statuses</option><option value="new">New</option><option value="reviewed">Reviewed</option><option value="resolved">Resolved</option><option value="archived">Archived</option></select></div><div className="overflow-hidden rounded-2xl border border-white/70 bg-white/75 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className="overflow-x-auto"><table className="w-full min-w-[980px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-400"><tr>{canDelete ? <th className="w-12 px-5 py-4"><input type="checkbox" checked={reviews.length > 0 && selected.length === reviews.length} onChange={(e) => setSelected(e.target.checked ? reviews.map((review) => review.id) : [])} /></th> : null}<th className="px-5 py-4">Date</th><th className="px-5 py-4">Receipt</th><th className="px-5 py-4">Branch</th><th className="px-5 py-4">Rating</th><th className="px-5 py-4">Comment</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Action</th></tr></thead><tbody className="divide-y divide-slate-100">{reviews.map((review) => <tr key={review.id} className="hover:bg-slate-50/70">{canDelete ? <td className="px-5 py-4"><input type="checkbox" checked={selected.includes(review.id)} onChange={(e) => setSelected((current) => e.target.checked ? [...current, review.id] : current.filter((id) => id !== review.id))} /></td> : null}<td className="whitespace-nowrap px-5 py-4 text-xs text-slate-500">{moneyDate(review.createdAt)}</td><td className="px-5 py-4 font-semibold text-slate-800">{review.receiptNo}</td><td className="px-5 py-4"><p className="font-medium text-slate-700">{review.branchName}</p><p className="text-xs text-slate-400">{review.qrName}</p></td><td className="px-5 py-4"><p className="font-bold text-slate-800">{review.overall.toFixed(2)}</p><p className="text-[11px] tracking-tight text-amber-400">{stars(review.overall)}</p></td><td className="max-w-[260px] truncate px-5 py-4 text-slate-500">{review.comment || "—"}</td><td className="px-5 py-4"><StatusBadge status={review.status} /></td><td className="px-5 py-4"><select value={review.status} onChange={(e) => update.mutate({ id: review.id, status: e.target.value as "new" | "reviewed" | "resolved" | "archived" }, { onSuccess: () => utils.admin.reviews.invalidate() })} className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600"><option value="new">New</option><option value="reviewed">Reviewed</option><option value="resolved">Resolved</option><option value="archived">Archived</option></select></td></tr>)}</tbody></table></div>{!reviews.length ? <Empty text="Review tidak ditemukan." /> : null}</div></div>;
+
+  return (
+    <div className="space-y-6">
+      <PageHeading eyebrow="Voice of customer" title="Reviews" subtitle="Review every customer signal and turn feedback into action." action={<div className="flex flex-wrap gap-2"><button onClick={download} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/75 px-4 text-sm font-bold text-slate-700"><Download className="h-4 w-4" /> Export CSV</button>{canDelete ? <><button disabled={!selected.length || deleteOne.isPending} onClick={removeSelected} className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-600 disabled:opacity-40"><Trash2 className="h-4 w-4" /> Delete selected</button><button disabled={deleteAll.isPending} onClick={removeAll} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-bold text-white disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete all</button></> : null}</div>} />
+      <div className="flex flex-wrap gap-3 rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]">
+        <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3">
+          <Search className="h-4 w-4 text-slate-400" />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search receipt or comment" className="h-10 w-full text-sm outline-none" />
+        </div>
+        <select value={branchId ?? ""} onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : undefined); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
+          <option value="">All branches</option>
+          {branches?.map((branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}
+        </select>
+        <select value={status ?? ""} onChange={(e) => { setStatus((e.target.value || undefined) as typeof status); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
+          <option value="">All statuses</option>
+          <option value="new">New</option>
+          <option value="reviewed">Reviewed</option>
+          <option value="resolved">Resolved</option>
+          <option value="archived">Archived</option>
+        </select>
+      </div>
+      <div className="overflow-hidden rounded-2xl border border-white/70 bg-white/75 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <tr>
+                {canDelete ? <th className="w-12 px-5 py-4"><input type="checkbox" checked={reviews.length > 0 && selected.length === reviews.length} onChange={(e) => setSelected(e.target.checked ? reviews.map((review) => review.id) : [])} /></th> : null}
+                <th className="px-5 py-4">Date</th>
+                <th className="px-5 py-4">Receipt</th>
+                <th className="px-5 py-4">Branch</th>
+                <th className="px-5 py-4">Rating</th>
+                <th className="px-5 py-4">Comment</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {reviews.map((review) => (
+                <tr key={review.id} className="hover:bg-slate-50/70 cursor-pointer" onClick={() => setDetailReviewId(review.id)}>
+                  {canDelete ? <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selected.includes(review.id)} onChange={(e) => setSelected((current) => e.target.checked ? [...current, review.id] : current.filter((id) => id !== review.id))} /></td> : null}
+                  <td className="whitespace-nowrap px-5 py-4 text-xs text-slate-500">{moneyDate(review.createdAt)}</td>
+                  <td className="px-5 py-4 font-semibold text-slate-800">{review.receiptNo}</td>
+                  <td className="px-5 py-4"><p className="font-medium text-slate-700">{review.branchName}</p><p className="text-xs text-slate-400">{review.qrName}</p></td>
+                  <td className="px-5 py-4"><p className="font-bold text-slate-800">{review.overall.toFixed(2)}</p><p className="text-[11px] tracking-tight text-amber-400">{stars(review.overall)}</p></td>
+                  <td className="max-w-[260px] truncate px-5 py-4 text-slate-500">{review.comment || "—"}</td>
+                  <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><StatusBadge status={review.status} /></td>
+                  <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setDetailReviewId(review.id)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#2f6fed] hover:text-[#2f6fed]">
+                        <Eye className="h-3.5 w-3.5" /> Detail
+                      </button>
+                      <select value={review.status} onChange={(e) => update.mutate({ id: review.id, status: e.target.value as "new" | "reviewed" | "resolved" | "archived" }, { onSuccess: () => utils.admin.reviews.invalidate() })} className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600">
+                        <option value="new">New</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="archived">Archived</option>
+                      </select>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!reviews.length ? <Empty text="Review tidak ditemukan." /> : null}
+
+        {/* Pagination Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 bg-slate-50/50">
+          <div className="flex items-center gap-3 text-xs text-slate-500">
+            <span>Baris per halaman:</span>
+            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none">
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>
+              Menampilkan {total === 0 ? 0 : (page - 1) * pageSize + 1} - {Math.min(page * pageSize, total)} dari {total} review
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              <ChevronLeft className="h-4 w-4" /> Prev
+            </button>
+            <span className="text-xs font-semibold text-slate-600 px-2">
+              Halaman {page} dari {totalPages}
+            </span>
+            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              Next <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {detailReviewId ? (
+        <ReviewDetailModal
+          reviewId={detailReviewId}
+          onClose={() => setDetailReviewId(null)}
+          onStatusChange={() => {
+            utils.admin.reviews.invalidate();
+            utils.admin.review.invalidate({ id: detailReviewId });
+            utils.dashboard.overview.invalidate();
+          }}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 function AlertsPage() { const { data: alerts, isLoading } = trpc.admin.alerts.useQuery(); const resolve = trpc.admin.resolveAlert.useMutation(); const utils = trpc.useUtils(); if (isLoading || !alerts) return <Loading />; return <div className="space-y-6"><PageHeading eyebrow="Action queue" title="Alert center" subtitle="Resolve low-rating signals before they become recurring issues." /><div className="grid gap-4 sm:grid-cols-3"><SummaryCard label="Critical reviews" value={alerts.filter((a) => a.status === "open" && a.severity === "critical").length} tone="rose" /><SummaryCard label="Open attention" value={alerts.filter((a) => a.status === "open" && a.severity !== "critical").length} tone="amber" /><SummaryCard label="Resolved" value={alerts.filter((a) => a.status === "resolved").length} tone="green" /></div><div className="space-y-3">{alerts.map((alert) => <div key={alert.id} className={`flex flex-wrap items-center gap-4 rounded-2xl border bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] ${alert.status === "open" ? "border-rose-100" : "border-white/70 opacity-70"}`}><div className={`grid h-11 w-11 place-items-center rounded-xl ${alert.status === "open" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"}`}><ShieldAlert className="h-5 w-5" /></div><div className="min-w-[180px] flex-1"><div className="flex items-center gap-2"><p className="font-bold text-slate-800">{alert.receiptNo}</p><StatusBadge status={alert.status === "open" ? "new" : "resolved"} /></div><p className="mt-1 text-sm text-slate-500">{alert.branchName} · {alert.message}</p><p className="mt-1 text-xs text-slate-400">Rating overall {Number(alert.overall).toFixed(2)} · {moneyDate(alert.createdAt)}</p></div>{alert.status === "open" ? <button onClick={() => resolve.mutate({ id: alert.id }, { onSuccess: () => utils.admin.alerts.invalidate() })} className="rounded-xl bg-[#2f6fed] px-4 py-2.5 text-xs font-bold text-white">Mark resolved</button> : <span className="text-xs font-semibold text-emerald-600">Resolved</span>}</div>)}{!alerts.length ? <Empty text="Tidak ada alert saat ini. Semua aman." /> : null}</div></div>; }

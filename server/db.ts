@@ -151,9 +151,16 @@ function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: {
   });
 }
 
-export async function listReviews(user: ScopeUser, input: Parameters<typeof filterRows>[1] = {}) {
-  const rows = filterRows(await getJoinedReviews(user), input);
-  return rows.map(({ review, branch, qr, team }) => ({
+export async function listReviews(user: ScopeUser, input: Parameters<typeof filterRows>[1] & { page?: number; pageSize?: number } = {}) {
+  const allRows = filterRows(await getJoinedReviews(user), input);
+  const total = allRows.length;
+  const page = Math.max(1, input.page ?? 1);
+  const pageSize = Math.max(1, Math.min(100, input.pageSize ?? 10));
+  const totalPages = Math.ceil(total / pageSize) || 1;
+  const startIdx = (page - 1) * pageSize;
+  const pagedRows = allRows.slice(startIdx, startIdx + pageSize);
+
+  const items = pagedRows.map(({ review, branch, qr, team }) => ({
     ...review,
     branchName: branch.name,
     branchCode: branch.code,
@@ -161,6 +168,14 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
     teamName: team?.name ?? "Unassigned",
     overall: overallRating(review),
   }));
+
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages,
+  };
 }
 
 export async function getReviewDetail(user: ScopeUser, id: number) {
@@ -374,7 +389,15 @@ export async function dashboardData(user: ScopeUser, input: { branchId?: number;
 }
 
 export async function exportReviews(user: ScopeUser, input: Parameters<typeof filterRows>[1] = {}) {
-  const rows = await listReviews(user, input);
+  const allRows = filterRows(await getJoinedReviews(user), input);
+  const rows = allRows.map(({ review, branch, qr, team }) => ({
+    ...review,
+    branchName: branch.name,
+    branchCode: branch.code,
+    qrName: qr?.name ?? "Direct",
+    teamName: team?.name ?? "Unassigned",
+    overall: overallRating(review),
+  }));
   const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
   return [
     ["Date", "Receipt", "Branch", "QR", "Installation", "Grooming", "Service", "Overall", "Comment", "Status"].map(escape).join(","),
