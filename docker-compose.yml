@@ -41,7 +41,7 @@ services:
       OWNER_OPEN_ID: ${OWNER_OPEN_ID:-}
       BUILT_IN_FORGE_API_URL: ${BUILT_IN_FORGE_API_URL:-}
       BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY:-}
-    command: ["sh", "-c", "pnpm exec drizzle-kit migrate && (pnpm exec tsx server/seed.ts || true) && node dist/index.js"]
+    command: ["sh", "-c", "pnpm exec drizzle-kit migrate && node dist/index.js"]
 
 volumes:
   mysql_data:
