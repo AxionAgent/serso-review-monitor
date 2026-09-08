@@ -3,6 +3,7 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
@@ -14,6 +15,7 @@ ENV PORT=3000
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 COPY --from=build /app/dist ./dist
 # drizzle-kit migrate (compose entrypoint) needs the config + migration SQL
