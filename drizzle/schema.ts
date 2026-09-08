@@ -90,6 +90,7 @@ export const reviews = mysqlTable(
     branchIdx: index("reviews_branch_idx").on(table.branchId),
     qrIdx: index("reviews_qr_idx").on(table.qrCodeId),
     receiptIdx: index("reviews_receipt_idx").on(table.receiptNo),
+    receiptBranchUnique: uniqueIndex("reviews_branch_receipt_unique").on(table.branchId, table.receiptNo),
     createdIdx: index("reviews_created_idx").on(table.createdAt),
     statusIdx: index("reviews_status_idx").on(table.status),
     ratingsIdx: index("reviews_ratings_idx").on(table.installationRating, table.groomingRating, table.serviceRating),

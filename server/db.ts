@@ -164,10 +164,19 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
 }
 
 export async function getReviewDetail(user: ScopeUser, id: number) {
-  const rows = await getJoinedReviews(user);
-  const row = rows.find(({ review }) => review.id === id);
-  if (!row) return undefined;
   const db = await requireDb();
+  const branchId = scopedBranchId(user);
+  // Direct query by id — avoids fetching all reviews (was O(N))
+  const rows = await db
+    .select({ review: reviews, branch: branches, qr: qrCodes, team: teams })
+    .from(reviews)
+    .innerJoin(branches, eq(reviews.branchId, branches.id))
+    .leftJoin(qrCodes, eq(reviews.qrCodeId, qrCodes.id))
+    .leftJoin(teams, eq(reviews.teamId, teams.id))
+    .where(and(eq(reviews.id, id), branchId === undefined ? undefined : eq(reviews.branchId, branchId)))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return undefined;
   const alerts = await db.select().from(reviewAlerts).where(eq(reviewAlerts.reviewId, id)).orderBy(desc(reviewAlerts.createdAt));
   return { ...row.review, branch: row.branch, qr: row.qr, team: row.team, overall: overallRating(row.review), alerts };
 }

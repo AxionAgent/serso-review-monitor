@@ -1,5 +1,6 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
@@ -21,6 +22,7 @@ import {
   exportReviews,
   findActiveQR,
   findReviewsBySearch,
+  getDb,
   getReviewDetail,
   getSettings,
   isSuperAdmin,
@@ -35,6 +37,7 @@ import {
   toggleQRCode,
   updateReviewStatus,
 } from "./db";
+import { settings as settingsTable } from "../drizzle/schema";
 
 const statusSchema = z.enum(["new", "reviewed", "resolved", "archived"]);
 const dateFilters = z.object({
@@ -61,14 +64,25 @@ function assertWritable(user: NonNullable<Parameters<typeof scopedBranchId>[0]>)
 
 const submissionWindow = new Map<string, number>();
 
+// Prune stale entries every 5 minutes to prevent unbounded growth
+setInterval(() => {
+  const cutoff = Date.now() - 60_000;
+  for (const [key, ts] of submissionWindow) {
+    if (ts < cutoff) submissionWindow.delete(key);
+  }
+}, 5 * 60 * 1000).unref();
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     login: publicProcedure.input(z.object({ username: z.string().min(1).max(80), password: z.string().min(1).max(120) })).mutation(async ({ input, ctx }) => {
-      const credentials = input.username === "admin" && input.password === "admin"
+      const adminUser = process.env.ADMIN_USERNAME ?? "admin";
+      const adminPass = process.env.ADMIN_PASSWORD ?? "admin";
+      const superPass = process.env.SUPERADMIN_PASSWORD ?? "super123";
+      const credentials = input.username === adminUser && input.password === adminPass
         ? { openId: "demo-admin@example.com", name: "Workspace Admin", email: "admin@example.com", role: "admin" as const }
-        : input.username === "superadmin" && input.password === "super123"
+        : input.username === "superadmin" && input.password === superPass
           ? { openId: "demo-superadmin@example.com", name: "Super Admin", email: "superadmin@example.com", role: "super_admin" as const }
           : null;
       if (!credentials) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid admin credentials." });
@@ -111,7 +125,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const now = Date.now();
-        const key = `${ctx.req.ip ?? "anonymous"}:${input.code}`;
+        const key = `${ctx.req.ip ?? ctx.req.socket.remoteAddress ?? "anonymous"}:${input.code}`;
         const previous = submissionWindow.get(key) ?? 0;
         if (now - previous < 15_000) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Mohon tunggu sebentar sebelum mengirim review berikutnya." });
         submissionWindow.set(key, now);
@@ -165,11 +179,10 @@ export const appRouter = router({
     search: protectedProcedure.input(z.object({ search: z.string().min(2).max(80) })).query(({ input, ctx }) => findReviewsBySearch(ctx.user, input.search)),
     settings: protectedProcedure.query(() => getSettings()),
     updateSettings: adminProcedure.input(z.object({ companyName: z.string().min(2).max(160), reviewPageTitle: z.string().min(2).max(160), thankYouMessage: z.string().min(2).max(500), negativeThreshold: z.number().int().min(1).max(3), timezone: z.string().min(2).max(64), primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/) })).mutation(async ({ input }) => {
-      const db = await import("./db").then((module) => module.getDb());
+      const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const settingsTable = (await import("../drizzle/schema")).settings;
       const rows = await db.select().from(settingsTable).limit(1);
-      if (rows[0]) await db.update(settingsTable).set(input).where((await import("drizzle-orm")).eq(settingsTable.id, rows[0].id));
+      if (rows[0]) await db.update(settingsTable).set(input).where(eq(settingsTable.id, rows[0].id));
       else await db.insert(settingsTable).values(input);
       return getSettings();
     }),
