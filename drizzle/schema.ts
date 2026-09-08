@@ -129,7 +129,7 @@ export const auditLogs = mysqlTable(
 
 export const settings = mysqlTable("settings", {
   id: int("id").autoincrement().primaryKey(),
-  companyName: varchar("companyName", { length: 160 }).default("Layanan Prima").notNull(),
+  companyName: varchar("companyName", { length: 160 }).default("Service Solution").notNull(),
   reviewPageTitle: varchar("reviewPageTitle", { length: 160 }).default("Bagikan pengalaman Anda").notNull(),
   thankYouMessage: varchar("thankYouMessage", { length: 500 }).default("Masukan Anda membantu kami meningkatkan kualitas layanan.").notNull(),
   negativeThreshold: int("negativeThreshold").default(2).notNull(),

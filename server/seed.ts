@@ -18,11 +18,13 @@ async function seed() {
   if (!db) throw new Error("DATABASE_URL is not configured");
   const existing = await db.select({ id: branches.id }).from(branches).limit(1);
   if (existing[0]) {
-    console.log("Seed skipped: data already exists");
+    await db.insert(users).values({ openId: "demo-superadmin@example.com", name: "Super Admin", email: "superadmin@example.com", role: "super_admin", status: "active", loginMethod: "local" }).onDuplicateKeyUpdate({ set: { role: "super_admin", status: "active" } });
+    await db.update(settings).set({ companyName: "Service Solution" });
+    console.log("Seed skipped: existing data updated with superadmin and branding");
     return;
   }
 
-  await db.insert(settings).values({});
+  await db.insert(settings).values({ companyName: "Service Solution" });
   await db.insert(branches).values([
     { code: "SGK", name: "Singkawang", address: "Jl. Diponegoro No. 18", status: "active" },
     { code: "PTK", name: "Pontianak", address: "Jl. Gajah Mada No. 42", status: "active" },
@@ -51,7 +53,8 @@ async function seed() {
   const qrRows = await db.select().from(qrCodes);
 
   await db.insert(users).values([
-    { openId: "demo-admin@example.com", name: "Demo Super Admin", email: "admin@example.com", role: "admin", status: "active", loginMethod: "demo" },
+    { openId: "demo-admin@example.com", name: "Workspace Admin", email: "admin@example.com", role: "admin", status: "active", loginMethod: "local" },
+    { openId: "demo-superadmin@example.com", name: "Super Admin", email: "superadmin@example.com", role: "super_admin", status: "active", loginMethod: "local" },
     { openId: "demo-singkawang@example.com", name: "Singkawang Branch Admin", email: "singkawang@example.com", role: "branch_admin", branchId: byCode.SGK.id, status: "active", loginMethod: "demo" },
     { openId: "demo-viewer@example.com", name: "Read Only Viewer", email: "viewer@example.com", role: "viewer", status: "active", loginMethod: "demo" },
   ]);

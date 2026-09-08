@@ -1,0 +1,1 @@
+ALTER TABLE `settings` MODIFY COLUMN `companyName` varchar(160) NOT NULL DEFAULT 'Service Solution';

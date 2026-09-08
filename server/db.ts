@@ -192,6 +192,57 @@ export async function toggleBranch(id: number, status: "active" | "inactive", us
   return { success: true };
 }
 
+export async function deleteBranch(id: number, userId?: number) {
+  const db = await requireDb();
+  const branchReviews = await db.select({ id: reviews.id }).from(reviews).where(eq(reviews.branchId, id));
+  const reviewIds = branchReviews.map((row) => row.id);
+  if (reviewIds.length) {
+    await db.delete(reviewAlerts).where(inArray(reviewAlerts.reviewId, reviewIds));
+    await db.delete(reviews).where(inArray(reviews.id, reviewIds));
+  }
+  await db.update(users).set({ branchId: null }).where(eq(users.branchId, id));
+  await db.delete(qrCodes).where(eq(qrCodes.branchId, id));
+  await db.delete(teams).where(eq(teams.branchId, id));
+  await db.delete(branches).where(eq(branches.id, id));
+  await createAuditLog({ userId, action: "Deleted branch and related records", targetType: "branch", targetId: id });
+  return { success: true, deletedReviews: reviewIds.length };
+}
+
+export async function deleteTeam(id: number, userId?: number) {
+  const db = await requireDb();
+  await db.update(reviews).set({ teamId: null }).where(eq(reviews.teamId, id));
+  await db.delete(teams).where(eq(teams.id, id));
+  await createAuditLog({ userId, action: "Deleted team", targetType: "team", targetId: id });
+  return { success: true };
+}
+
+export async function deleteQRCode(id: number, userId?: number) {
+  const db = await requireDb();
+  await db.update(reviews).set({ qrCodeId: null }).where(eq(reviews.qrCodeId, id));
+  await db.delete(qrCodes).where(eq(qrCodes.id, id));
+  await createAuditLog({ userId, action: "Deleted QR code", targetType: "qr_code", targetId: id });
+  return { success: true };
+}
+
+export async function deleteReview(user: ScopeUser, id: number, userId?: number) {
+  const detail = await getReviewDetail(user, id);
+  if (!detail) throw new Error("Review not found");
+  const db = await requireDb();
+  await db.delete(reviewAlerts).where(eq(reviewAlerts.reviewId, id));
+  await db.delete(reviews).where(eq(reviews.id, id));
+  await createAuditLog({ userId, action: "Deleted review", targetType: "review", targetId: id });
+  return { success: true };
+}
+
+export async function deleteAllReviews(userId?: number) {
+  const db = await requireDb();
+  const rows = await db.select({ id: reviews.id }).from(reviews);
+  await db.delete(reviewAlerts);
+  await db.delete(reviews);
+  await createAuditLog({ userId, action: "Deleted all reviews", targetType: "review", targetId: null, metadata: JSON.stringify({ count: rows.length }) });
+  return { success: true, deleted: rows.length };
+}
+
 export async function createTeam(input: InsertTeam, userId?: number) {
   const db = await requireDb();
   const result = await db.insert(teams).values(input);

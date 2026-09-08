@@ -100,7 +100,7 @@ The seed script creates role fixtures with these development identifiers:
 | Singkawang branch admin | `singkawang@example.com` |
 | Viewer | `viewer@example.com` |
 
-OAuth is disabled in this deployment. Use the local admin form with username `admin` and password `admin`. The server validates these credentials, creates or reuses the seeded admin role, and issues the signed `app_session_id` cookie. Replace the hardcoded development credential check with a secret-backed credential or an enterprise identity provider before production use.
+OAuth is disabled in this deployment. Use the local admin form with `admin:admin` for workspace administration or `superadmin:super123` for destructive super-admin operations. The server validates these credentials, creates or reuses the seeded admin role, and issues the signed `app_session_id` cookie. Replace the hardcoded development credential check with a secret-backed credential or an enterprise identity provider before production use.
 
 ## QR generation
 

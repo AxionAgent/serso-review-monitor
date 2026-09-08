@@ -4,9 +4,14 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
-import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router, superAdminProcedure } from "./_core/trpc";
 import {
   createBranch,
+  deleteAllReviews,
+  deleteBranch,
+  deleteQRCode,
+  deleteReview,
+  deleteTeam,
   getUserByOpenId,
   upsertUser,
   createQRCode,
@@ -61,13 +66,16 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     login: publicProcedure.input(z.object({ username: z.string().min(1).max(80), password: z.string().min(1).max(120) })).mutation(async ({ input, ctx }) => {
-      if (input.username !== "admin" || input.password !== "admin") {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid admin credentials." });
-      }
-      const openId = "demo-admin@example.com";
+      const credentials = input.username === "admin" && input.password === "admin"
+        ? { openId: "demo-admin@example.com", name: "Workspace Admin", email: "admin@example.com", role: "admin" as const }
+        : input.username === "superadmin" && input.password === "super123"
+          ? { openId: "demo-superadmin@example.com", name: "Super Admin", email: "superadmin@example.com", role: "super_admin" as const }
+          : null;
+      if (!credentials) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid admin credentials." });
+      const openId = credentials.openId;
       let user = await getUserByOpenId(openId);
       if (!user) {
-        await upsertUser({ openId, name: "Workspace Admin", email: "admin@example.com", role: "admin", loginMethod: "local", status: "active" });
+        await upsertUser({ ...credentials, loginMethod: "local", status: "active" });
         user = await getUserByOpenId(openId);
       }
       if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Admin account unavailable." });
@@ -123,12 +131,14 @@ export const appRouter = router({
     branches: protectedProcedure.query(({ ctx }) => listBranches(ctx.user)),
     createBranch: adminProcedure.input(z.object({ name: z.string().trim().min(2).max(160), code: z.string().trim().min(2).max(16).regex(/^[A-Za-z0-9-]+$/), address: z.string().trim().max(255).optional() })).mutation(async ({ input, ctx }) => createBranch({ ...input, code: input.code.toUpperCase(), address: input.address || null, status: "active" }, ctx.user.id)),
     toggleBranch: adminProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["active", "inactive"]) })).mutation(({ input, ctx }) => toggleBranch(input.id, input.status, ctx.user.id)),
+    deleteBranch: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteBranch(input.id, ctx.user.id)),
     teams: protectedProcedure.query(({ ctx }) => listTeams(ctx.user)),
     createTeam: protectedProcedure.input(z.object({ branchId: z.number().int().positive(), name: z.string().trim().min(2).max(160) })).mutation(async ({ input, ctx }) => {
       assertWritable(ctx.user);
       assertBranchScope(ctx.user, input.branchId);
       return createTeam({ ...input, status: "active" }, ctx.user.id);
     }),
+    deleteTeam: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteTeam(input.id, ctx.user.id)),
     qrCodes: protectedProcedure.query(({ ctx }) => listQRCodes(ctx.user)),
     createQRCode: protectedProcedure.input(z.object({ branchId: z.number().int().positive(), name: z.string().trim().min(2).max(160) })).mutation(async ({ input, ctx }) => {
       assertWritable(ctx.user);
@@ -143,9 +153,12 @@ export const appRouter = router({
       if (!match) forbidden();
       return toggleQRCode(input.id, input.status, ctx.user.id);
     }),
+    deleteQRCode: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteQRCode(input.id, ctx.user.id)),
     reviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => listReviews(ctx.user, input)),
     review: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input, ctx }) => getReviewDetail(ctx.user, input.id)),
     updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id); }),
+    deleteReview: superAdminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteReview(ctx.user, input.id, ctx.user.id)),
+    deleteAllReviews: superAdminProcedure.mutation(({ ctx }) => deleteAllReviews(ctx.user.id)),
     alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),
     resolveAlert: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return resolveAlert(ctx.user, input.id, ctx.user.id); }),
     exportReviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => exportReviews(ctx.user, input)),
