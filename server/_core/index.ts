@@ -29,6 +29,9 @@ async function startServer() {
   app.use(express.json({ limit: "512kb" }));
   app.use(express.urlencoded({ limit: "512kb", extended: true }));
   registerStorageProxy(app);
+  app.get("/healthz", (_req, res) => {
+    res.status(200).send("ok");
+  });
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   if (process.env.NODE_ENV === "development") await setupVite(app, server);
   else serveStatic(app);
