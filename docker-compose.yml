@@ -44,7 +44,7 @@ services:
       BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY:-}
     command: ["sh", "-c", "pnpm exec drizzle-kit migrate && node dist/index.js"]
 
-  # v2 — QR all-in-one, isolated DB
+  # DB v2 — isolated untuk instance reviewv2
   db-v2:
     image: mysql:8.4
     restart: unless-stopped
@@ -61,26 +61,35 @@ services:
       timeout: 5s
       retries: 12
 
-  app-v2:
+  # reviewv2 = full app (admin dashboard sama persis kayak review) dgn DB terpisah
+  app-full-v2:
     build: .
     restart: unless-stopped
     depends_on:
       db-v2:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9312/healthz | grep -q ok"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/healthz | grep -q ok"]
       interval: 15s
       timeout: 5s
       retries: 5
     ports:
-      - "${PORT_V2:-9312}:9312"
+      - "${PORT_FULL_V2:-9313}:3000"
     environment:
       NODE_ENV: production
-      PORT_V2: 9312
-      DATABASE_URL_V2: mysql://${MYSQL_USER_V2}:${MYSQL_PASSWORD_V2}@db-v2:3306/${MYSQL_DATABASE_V2:-serso_v2}
-      DATABASE_URL_V1: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE:-serso}
-      V2_PUBLIC_BASE_URL: ${V2_PUBLIC_BASE_URL:-https://reviewv2.kemscloud.web.id}
-    command: ["sh", "-c", "node dist/v2/server.js"]
+      PORT: 3000
+      DATABASE_URL: mysql://${MYSQL_USER_V2}:${MYSQL_PASSWORD_V2}@db-v2:3306/${MYSQL_DATABASE_V2:-serso_v2}
+      JWT_SECRET: ${JWT_SECRET_V2:?Set JWT_SECRET_V2}
+      ADMIN_USERNAME: ${ADMIN_USERNAME_V2:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD_V2:-admin}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD_V2:-super123}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      VITE_APP_ID: ${VITE_APP_ID:-}
+      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL:-}
+      OWNER_OPEN_ID: ${OWNER_OPEN_ID:-}
+      BUILT_IN_FORGE_API_URL: ${BUILT_IN_FORGE_API_URL:-}
+      BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY:-}
+    command: ["sh", "-c", "pnpm exec drizzle-kit migrate && node dist/index.js"]
 
 volumes:
   mysql_data:
