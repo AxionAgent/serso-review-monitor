@@ -123,6 +123,18 @@ export async function listQRCodes(user?: ScopeUser) {
   return query.where(branchId === undefined ? undefined : eq(qrCodes.branchId, branchId)).orderBy(desc(qrCodes.createdAt));
 }
 
+/** Public homepage routes: active QR codes with their active branch (no auth). */
+export async function listPublicRoutes() {
+  const db = await requireDb();
+  const rows = await db
+    .select({ code: qrCodes.code, name: qrCodes.name, branchName: branches.name })
+    .from(qrCodes)
+    .innerJoin(branches, eq(qrCodes.branchId, branches.id))
+    .where(and(eq(qrCodes.status, "active"), eq(branches.status, "active")))
+    .orderBy(branches.name, qrCodes.name);
+  return rows;
+}
+
 async function getJoinedReviews(user?: ScopeUser) {
   const db = await requireDb();
   const branchId = scopedBranchId(user);

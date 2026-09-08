@@ -29,6 +29,7 @@ import {
   isSuperAdmin,
   listAlerts,
   listBranches,
+  listPublicRoutes,
   listQRCodes,
   listReviews,
   listTeams,
@@ -108,6 +109,7 @@ export const appRouter = router({
     }),
   }),
   customer: router({
+    activeRoutes: publicProcedure.query(() => listPublicRoutes()),
     context: publicProcedure.input(z.object({ code: z.string().min(1).max(32) })).query(async ({ input }) => {
       const match = await findActiveQR(input.code);
       const settings = await getSettings();
