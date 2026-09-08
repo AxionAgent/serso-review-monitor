@@ -1,10 +1,7 @@
 # Visual QA notes
 
-The final visual pass verified:
+The requested visual refresh is complete. Public and admin surfaces now use a blue/white gradient palette, navy-blue navigation, translucent white panels, backdrop blur, blue shadows, and blue accent states. The landing page visibly renders the new blue hero, the customer route uses the same palette, and the admin workspace uses a blue glass shell.
 
-- Landing page: branded teal/leaf experience with clear workspace and customer-flow CTAs.
-- Public QR page: mobile-first layout, branch locked to QR (`Singkawang` for `/r/SGK`), touch-sized star controls, server-backed settings copy, and inline validation area.
-- Admin reviews: live seeded review rows, branch and status filters, rating display, status workflow, and CSV export action.
-- Admin workspace: responsive sidebar, sticky top bar, alert center, KPI cards, chart surfaces, and branded skeleton loading state for cold database queries.
+OAuth is disabled in the running server entrypoint and client bootstrap. The admin screen now presents a local login gate. The server validates `admin` / `admin`, creates or reuses the seeded admin user, and issues the signed `app_session_id` cookie. A curl acceptance check confirmed both the login response and a subsequent `auth.me` response with role `admin`.
 
-The live backend probe verified that `/r/SGK` resolves to an active Singkawang QR, invalid codes return `state: invalid`, the dashboard aggregates seeded plus acceptance-test rows, and negative-review counts follow the any-rating-at-or-below-threshold rule.
+Final checks passed: `pnpm check`, `pnpm test`, and `pnpm build`. The existing review, QR, dashboard, and public submission flows remain database-backed.

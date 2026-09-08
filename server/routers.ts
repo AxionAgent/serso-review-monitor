@@ -1,11 +1,14 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   createBranch,
+  getUserByOpenId,
+  upsertUser,
   createQRCode,
   createReview,
   createTeam,
@@ -57,6 +60,22 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+    login: publicProcedure.input(z.object({ username: z.string().min(1).max(80), password: z.string().min(1).max(120) })).mutation(async ({ input, ctx }) => {
+      if (input.username !== "admin" || input.password !== "admin") {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid admin credentials." });
+      }
+      const openId = "demo-admin@example.com";
+      let user = await getUserByOpenId(openId);
+      if (!user) {
+        await upsertUser({ openId, name: "Workspace Admin", email: "admin@example.com", role: "admin", loginMethod: "local", status: "active" });
+        user = await getUserByOpenId(openId);
+      }
+      if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Admin account unavailable." });
+      const token = await sdk.createSessionToken(openId, { name: user.name || "Workspace Admin", expiresInMs: ONE_YEAR_MS });
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, sameSite: "lax", maxAge: ONE_YEAR_MS });
+      return { success: true, user } as const;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

@@ -14,7 +14,7 @@ function Stars({ value, onChange, label }: { value: number; onChange: (value: nu
             key={star}
             onClick={() => onChange(star)}
             aria-label={`${star} dari 5 bintang`}
-            className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition active:scale-95 ${star <= value ? "border-amber-300 bg-amber-50 text-amber-500" : "border-slate-200 bg-white text-slate-300 hover:border-amber-200 hover:text-amber-300"}`}
+            className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition active:scale-95 ${star <= value ? "border-amber-300 bg-amber-50 text-amber-500" : "border-slate-200 bg-white/75 backdrop-blur-xl text-slate-300 hover:border-amber-200 hover:text-amber-300"}`}
           >
             <Star className={`h-7 w-7 ${star <= value ? "fill-current" : ""}`} />
           </button>
@@ -39,7 +39,7 @@ export default function PublicReview() {
   const [clientError, setClientError] = useState("");
 
   if (isLoading) {
-    return <div className="min-h-screen grid place-items-center bg-[#f5f7f6]"><Loader2 className="h-8 w-8 animate-spin text-[#1d6f63]" /></div>;
+    return <div className="min-h-screen grid place-items-center bg-[#f3f7ff]"><Loader2 className="h-8 w-8 animate-spin text-[#2f6fed]" /></div>;
   }
   if (error || !data || data.state === "invalid") return <StatusPage icon={<XCircle className="h-8 w-8" />} title="QR Code tidak ditemukan" body="Pastikan Anda memindai QR Code resmi dari cabang kami." />;
   if (data.state === "disabled") return <StatusPage icon={<XCircle className="h-8 w-8" />} title="QR Code tidak aktif" body="QR Code tidak aktif. Silakan minta bantuan tim layanan kami." />;
@@ -63,11 +63,11 @@ export default function PublicReview() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#f5f7f6] px-4 py-8 sm:py-12">
+      <div className="min-h-screen bg-[#f3f7ff] px-4 py-8 sm:py-12">
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg items-center justify-center">
-          <div className="w-full rounded-[2rem] bg-white p-8 text-center shadow-xl shadow-slate-200/60 sm:p-12">
-            <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-[#e3f2ee] text-[#1d6f63]"><Check className="h-8 w-8" /></div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.22em] text-[#1d6f63]">Review terkirim</p>
+          <div className="w-full rounded-[2rem] bg-white/75 backdrop-blur-xl p-8 text-center shadow-xl shadow-slate-200/60 sm:p-12">
+            <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-[#e3f2ee] text-[#2f6fed]"><Check className="h-8 w-8" /></div>
+            <p className="mb-3 text-sm font-bold uppercase tracking-[0.22em] text-[#2f6fed]">Review terkirim</p>
             <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-900">Terima kasih!</h1>
             <p className="mx-auto max-w-sm text-base leading-7 text-slate-500">{data.settings.thankYouMessage}</p>
             <div className="mt-8 rounded-2xl bg-slate-50 p-4 text-left text-sm text-slate-600"><span className="font-semibold text-slate-900">Branch:</span> {data.branch.name}</div>
@@ -78,25 +78,25 @@ export default function PublicReview() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f7f6] px-4 py-5 sm:py-10">
+    <div className="min-h-screen bg-[#f3f7ff] px-4 py-5 sm:py-10">
       <main className="mx-auto max-w-lg">
         <div className="mb-5 flex items-center justify-between px-1">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#1d6f63]"><ArrowLeft className="h-4 w-4" /> Kembali</Link>
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#1d6f63]">{data.settings.companyName}</span>
+          <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#2f6fed]"><ArrowLeft className="h-4 w-4" /> Kembali</Link>
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2f6fed]">{data.settings.companyName}</span>
         </div>
-        <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-slate-200/70">
-          <div className="bg-[#123f3a] px-6 py-8 text-white sm:px-9">
-            <div className="mb-7 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10"><MessageCircle className="h-5 w-5" /></div><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">Customer feedback</p><p className="text-sm text-white/70">Kami ingin mendengar pengalaman Anda</p></div></div>
+        <section className="overflow-hidden rounded-[2rem] bg-white/75 backdrop-blur-xl shadow-xl shadow-slate-200/70">
+          <div className="bg-[#0f2f5f] px-6 py-8 text-white sm:px-9">
+            <div className="mb-7 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/75 backdrop-blur-xl/10"><MessageCircle className="h-5 w-5" /></div><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">Customer feedback</p><p className="text-sm text-white/70">Kami ingin mendengar pengalaman Anda</p></div></div>
             <h1 className="max-w-sm text-3xl font-bold leading-tight tracking-tight">{data.settings.reviewPageTitle}</h1>
             <div className="mt-6 flex items-center gap-2 text-sm text-white/80"><Store className="h-4 w-4" /><span>Branch: <strong className="text-white">{data.branch.name}</strong></span></div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-8 p-6 sm:p-9">
-            <div className="rounded-2xl border border-[#dcebe7] bg-[#f6fbf9] p-4"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1d6f63]" /><div><p className="text-sm font-semibold text-slate-800">Feedback Anda aman bersama kami</p><p className="mt-1 text-xs leading-5 text-slate-500">Informasi branch terhubung otomatis dari QR Code yang Anda scan.</p></div></div></div>
-            <label className="block space-y-3"><span className="text-sm font-semibold text-slate-800">No. Receipt</span><input value={receiptNo} onChange={(event) => setReceiptNo(event.target.value)} placeholder="Contoh: INV-123456" className="h-13 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base outline-none transition focus:border-[#1d6f63] focus:ring-4 focus:ring-[#1d6f63]/10" /></label>
+            <div className="rounded-2xl border border-[#dbe7ff] bg-[#f7faff] p-4"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#2f6fed]" /><div><p className="text-sm font-semibold text-slate-800">Feedback Anda aman bersama kami</p><p className="mt-1 text-xs leading-5 text-slate-500">Informasi branch terhubung otomatis dari QR Code yang Anda scan.</p></div></div></div>
+            <label className="block space-y-3"><span className="text-sm font-semibold text-slate-800">No. Receipt</span><input value={receiptNo} onChange={(event) => setReceiptNo(event.target.value)} placeholder="Contoh: INV-123456" className="h-13 w-full rounded-2xl border border-slate-200 bg-white/75 backdrop-blur-xl px-4 text-base outline-none transition focus:border-[#2f6fed] focus:ring-4 focus:ring-[#2f6fed]/10" /></label>
             <div className="space-y-7"><Stars value={installation} onChange={setInstallation} label="Bagaimana hasil pemasangan?" /><Stars value={grooming} onChange={setGrooming} label="Bagaimana grooming tim instalasi?" /><Stars value={service} onChange={setService} label="Bagaimana pelayanan tim kami?" /></div>
-            <label className="block space-y-3"><span className="text-sm font-semibold text-slate-800">Kritik, saran, atau komentar <span className="font-normal text-slate-400">(opsional)</span></span><textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={4} placeholder="Ceritakan pengalaman Anda..." className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-base outline-none transition focus:border-[#1d6f63] focus:ring-4 focus:ring-[#1d6f63]/10" /></label>
+            <label className="block space-y-3"><span className="text-sm font-semibold text-slate-800">Kritik, saran, atau komentar <span className="font-normal text-slate-400">(opsional)</span></span><textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={4} placeholder="Ceritakan pengalaman Anda..." className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-base outline-none transition focus:border-[#2f6fed] focus:ring-4 focus:ring-[#2f6fed]/10" /></label>
             {clientError ? <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{clientError}</div> : null}
-            <button type="submit" disabled={submit.isPending} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1d6f63] text-base font-bold text-white shadow-lg shadow-[#1d6f63]/20 transition hover:bg-[#16564e] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">{submit.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />} Kirim Review</button>
+            <button type="submit" disabled={submit.isPending} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#2f6fed] text-base font-bold text-white shadow-lg shadow-[#2f6fed]/20 transition hover:bg-[#2459c7] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">{submit.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />} Kirim Review</button>
             <p className="text-center text-xs leading-5 text-slate-400">Dengan mengirim review, Anda membantu kami meningkatkan kualitas layanan.</p>
           </form>
         </section>
@@ -106,5 +106,5 @@ export default function PublicReview() {
 }
 
 function StatusPage({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
-  return <div className="min-h-screen bg-[#f5f7f6] px-4 py-8"><div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg items-center justify-center"><div className="w-full rounded-[2rem] bg-white p-8 text-center shadow-xl shadow-slate-200/60 sm:p-12"><div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-rose-50 text-rose-500">{icon}</div><h1 className="mb-3 text-2xl font-bold tracking-tight text-slate-900">{title}</h1><p className="mb-8 leading-7 text-slate-500">{body}</p><Link href="/" className="inline-flex h-11 items-center rounded-xl bg-[#1d6f63] px-5 text-sm font-bold text-white">Kembali ke beranda</Link></div></div></div>;
+  return <div className="min-h-screen bg-[#f3f7ff] px-4 py-8"><div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg items-center justify-center"><div className="w-full rounded-[2rem] bg-white/75 backdrop-blur-xl p-8 text-center shadow-xl shadow-slate-200/60 sm:p-12"><div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-rose-50 text-rose-500">{icon}</div><h1 className="mb-3 text-2xl font-bold tracking-tight text-slate-900">{title}</h1><p className="mb-8 leading-7 text-slate-500">{body}</p><Link href="/" className="inline-flex h-11 items-center rounded-xl bg-[#2f6fed] px-5 text-sm font-bold text-white">Kembali ke beranda</Link></div></div></div>;
 }

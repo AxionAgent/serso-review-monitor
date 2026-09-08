@@ -13,15 +13,16 @@ The server resolves the QR identifier to the active branch and QR record. The br
 ## Technology
 
 - React 19 + TypeScript + Vite
+- Blue/white gradient surfaces with glassmorphism panels
 - Tailwind CSS 4 with a custom teal / leaf visual system
 - Express + tRPC 11 for typed server procedures
 - Drizzle ORM + MySQL/TiDB
-- Manus OAuth for authenticated workspace access
+- Signed local session cookie for authenticated workspace access
 - Recharts for analytics
 - `qrcode.react` for real SVG QR codes
 - Vitest-ready project structure
 
-The managed project uses the WebDev `web-db-user` scaffold. The scaffold's authentication is OAuth/session based rather than Laravel password authentication; role fixtures are seeded in the database and the live authenticated user's role is enforced by backend procedures.
+The managed project uses the WebDev `web-db-user` scaffold, with OAuth callback registration disabled for this deployment. Authentication uses a signed local session cookie and the development credential pair `admin:admin`; role fixtures are seeded in the database and the live authenticated user's role is enforced by backend procedures.
 
 ## Main routes
 
@@ -65,7 +66,7 @@ pnpm check
 pnpm dev
 ```
 
-Required runtime variables are provided by the managed environment. The relevant variables include `DATABASE_URL`, `JWT_SECRET`, the Manus OAuth variables, and the built-in API variables documented in `server/_core/env.ts`. Do not commit secrets or local `.env` files.
+Required runtime variables are provided by the managed environment. The relevant variables include `DATABASE_URL`, `JWT_SECRET`, and the built-in API variables documented in `server/_core/env.ts`. Do not commit secrets or local `.env` files.
 
 For a local database, apply the generated SQL using the project's normal Drizzle migration process. The managed environment already has the schema applied. The first migration was adjusted for TiDB compatibility so `settings.thankYouMessage` uses a bounded `varchar(500)` instead of a text default.
 
@@ -99,7 +100,7 @@ The seed script creates role fixtures with these development identifiers:
 | Singkawang branch admin | `singkawang@example.com` |
 | Viewer | `viewer@example.com` |
 
-The current scaffold authenticates through Manus OAuth, so these rows are role fixtures rather than password-login accounts. In an OAuth-enabled environment, use the configured OAuth identity and promote or scope that identity in the database. Replace all demo identifiers and credentials before production use.
+OAuth is disabled in this deployment. Use the local admin form with username `admin` and password `admin`. The server validates these credentials, creates or reuses the seeded admin role, and issues the signed `app_session_id` cookie. Replace the hardcoded development credential check with a secret-backed credential or an enterprise identity provider before production use.
 
 ## QR generation
 
@@ -126,7 +127,7 @@ pnpm build
 pnpm start
 ```
 
-The managed WebDev deployment builds the Vite client and bundles the Express/tRPC server into `dist`. Use a checkpoint before publishing. Production hardening should include rotating all demo identities, reviewing OAuth redirect settings, configuring the production domain, validating rate limits against expected traffic, and enabling backups for the database.
+The managed WebDev deployment builds the Vite client and bundles the Express/tRPC server into `dist`. Use a checkpoint before publishing. Production hardening should include replacing the development credential check with a secret-backed value, configuring the production domain, validating rate limits against expected traffic, and enabling backups for the database.
 
 ## Architecture overview
 

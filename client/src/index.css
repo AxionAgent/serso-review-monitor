@@ -3,40 +3,42 @@
 @import "tw-animate-css";
 
 :root {
-  --background: #f7faf8;
-  --foreground: #162522;
-  --card: #ffffff;
-  --card-foreground: #162522;
+  --background: #f3f7ff;
+  --foreground: #102a4f;
+  --card: rgb(255 255 255 / .75);
+  --card-foreground: #102a4f;
   --popover: #ffffff;
-  --popover-foreground: #162522;
-  --primary: #1d6f63;
+  --popover-foreground: #102a4f;
+  --primary: #2f6fed;
   --primary-foreground: #ffffff;
-  --secondary: #e4f1ee;
-  --secondary-foreground: #123f3a;
-  --muted: #eef3f1;
-  --muted-foreground: #647775;
-  --accent: #eff7c9;
-  --accent-foreground: #123f3a;
+  --secondary: #e8f0ff;
+  --secondary-foreground: #0f2f5f;
+  --muted: #edf3ff;
+  --muted-foreground: #64748b;
+  --accent: #dbe7ff;
+  --accent-foreground: #0f2f5f;
   --destructive: #c2414d;
   --destructive-foreground: #ffffff;
-  --border: #dfe9e5;
-  --input: #dfe9e5;
-  --ring: #5aafa0;
+  --border: #d6e3f8;
+  --input: #d6e3f8;
+  --ring: #75a7ff;
   --radius: 1rem;
 }
 
 * { box-sizing: border-box; }
-html { font-family: 'DM Sans', sans-serif; background: var(--background); }
-body { margin: 0; min-width: 320px; background: var(--background); color: var(--foreground); }
+html { font-family: 'DM Sans', sans-serif; background: #f3f7ff; }
+body { margin: 0; min-width: 320px; background: radial-gradient(circle at 8% 0%, #dbe7ff 0%, transparent 35%), radial-gradient(circle at 95% 15%, #e6efff 0%, transparent 32%), linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%); color: var(--foreground); }
 button, a, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgb(90 175 160 / .35); outline-offset: 2px; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgb(47 111 237 / .3); outline-offset: 2px; }
 h1, h2, h3, h4, h5, h6 { font-family: 'Manrope', sans-serif; }
+
+.glass-panel { background: rgb(255 255 255 / .68); border: 1px solid rgb(255 255 255 / .8); box-shadow: 0 24px 80px -36px rgb(37 99 235 / .35); backdrop-filter: blur(24px); }
 
 @media (prefers-reduced-motion: no-preference) {
   a, button, input, textarea, select { transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms cubic-bezier(.23,1,.32,1); }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #c8d8d2; border: 3px solid var(--background); border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: #b9ccef; border: 3px solid #f3f7ff; border-radius: 999px; }
