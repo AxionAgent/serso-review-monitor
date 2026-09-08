@@ -67,9 +67,9 @@ const submissionWindow = new Map<string, number>();
 // Prune stale entries every 5 minutes to prevent unbounded growth
 setInterval(() => {
   const cutoff = Date.now() - 60_000;
-  for (const [key, ts] of submissionWindow) {
+  submissionWindow.forEach((ts, key) => {
     if (ts < cutoff) submissionWindow.delete(key);
-  }
+  });
 }, 5 * 60 * 1000).unref();
 
 export const appRouter = router({
