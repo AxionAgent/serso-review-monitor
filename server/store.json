@@ -1,0 +1,2970 @@
+[
+  {
+    "value": "00",
+    "name": "00-H300-Head Office Home Center Indonesia"
+  },
+  {
+    "value": "01",
+    "name": "01-H301-INFORMA PURIMALL"
+  },
+  {
+    "value": "02",
+    "name": "02-J310-HCIR INFORMA MAG"
+  },
+  {
+    "value": "03",
+    "name": "03-J346-HCIR INFORMA BEKASI"
+  },
+  {
+    "value": "04",
+    "name": "04-J361-HCIR INFORMA PANAKKUKANG"
+  },
+  {
+    "value": "05",
+    "name": "05-J371-HCIR INFORMA IBCC"
+  },
+  {
+    "value": "06",
+    "name": "06-HXX1-INFORMA KUTA GALERIA"
+  },
+  {
+    "value": "07",
+    "name": "07-J333-HCIR INFORMA ROYAL SBY"
+  },
+  {
+    "value": "08",
+    "name": "08-H307-INFORMA BALIKPAPAN"
+  },
+  {
+    "value": "09",
+    "name": "09-J350-HCIR INFORMA AYB"
+  },
+  {
+    "value": "10",
+    "name": "10-J331-HCIR INFORMA PAKUWON"
+  },
+  {
+    "value": "11",
+    "name": "11-J321-HCIR INFORMA DEPOK"
+  },
+  {
+    "value": "12",
+    "name": "12-J358-INFORMA CIREBON"
+  },
+  {
+    "value": "13",
+    "name": "13-J338-HCIR INFORMA JUANDA MDN"
+  },
+  {
+    "value": "14",
+    "name": "14-J365-INFORMA KARAWACI"
+  },
+  {
+    "value": "15",
+    "name": "15-H314-INFORMA PALEMBANG"
+  },
+  {
+    "value": "16",
+    "name": "16-J342-HCIR INFORMA BANJARMASIN"
+  },
+  {
+    "value": "17",
+    "name": "17-J382-HCIR INFORMA MALANG"
+  },
+  {
+    "value": "18",
+    "name": "18-J30A-HCIR INFORMA BATAM"
+  },
+  {
+    "value": "19",
+    "name": "19-J325-HCIR INFORMA ARTERI PI"
+  },
+  {
+    "value": "1A",
+    "name": "1A-J369-HCIR JATILAND MALL TERNATE"
+  },
+  {
+    "value": "1B",
+    "name": "1B-J450-HCIR IE JATILAND TERNATE"
+  },
+  {
+    "value": "1E",
+    "name": "1E-J98A-HCIR EXHIBITION 21"
+  },
+  {
+    "value": "1F",
+    "name": "1F-J98B-HCIR EXHIBITION 22"
+  },
+  {
+    "value": "1G",
+    "name": "1G-J98C-HCIR EXHIBITION 23"
+  },
+  {
+    "value": "1H",
+    "name": "1H-J98D-HCIR EXHIBITION 24"
+  },
+  {
+    "value": "1I",
+    "name": "1I-J98E-HCIR EXHIBITION 25"
+  },
+  {
+    "value": "1J",
+    "name": "1J-J98F-HCIR EXHIBITION 26"
+  },
+  {
+    "value": "1K",
+    "name": "1K-J98G-HCIR EXHIBITION 27"
+  },
+  {
+    "value": "1L",
+    "name": "1L-J98H-HCIR EXHIBITION 28"
+  },
+  {
+    "value": "1M",
+    "name": "1M-J98I-HCIR EXHIBITION 29"
+  },
+  {
+    "value": "1N",
+    "name": "1N-J98J-HCIR EXHIBITION 30"
+  },
+  {
+    "value": "1R",
+    "name": "1R-J392-HCIR INFORMA LW KOTA WISATA"
+  },
+  {
+    "value": "1S",
+    "name": "1S-J521-HCIR THYS LW KOTA WISATA"
+  },
+  {
+    "value": "1T",
+    "name": "1T-J572-HCIR EYESOUL LW KOTA WISATA"
+  },
+  {
+    "value": "1U",
+    "name": "1U-J732-HCIR SELMA LW KOTA WISATA"
+  },
+  {
+    "value": "1V",
+    "name": "1V-J513-SUSEN LP TASIK"
+  },
+  {
+    "value": "1W",
+    "name": "1W-J520-HCIR THYS LP PURI"
+  },
+  {
+    "value": "1X",
+    "name": "1X-J448-HCIR IE YASMIN BOGOR"
+  },
+  {
+    "value": "1Y",
+    "name": "1Y-J725-HCIR SELMA PANAKKUKANG"
+  },
+  {
+    "value": "1Z",
+    "name": "1Z-J449-HCIR IE PANAKKUKANG"
+  },
+  {
+    "value": "20",
+    "name": "20-J349-HCIR INFORMA CIBUBUR"
+  },
+  {
+    "value": "21",
+    "name": "21-H320-INFORMA SUN PLAZA MEDAN"
+  },
+  {
+    "value": "22",
+    "name": "22-H321-INFORMA SIDOARJO"
+  },
+  {
+    "value": "23",
+    "name": "23-H001-WH CIKUPA"
+  },
+  {
+    "value": "24",
+    "name": "24-H002-WH PANAKKUKANG"
+  },
+  {
+    "value": "25",
+    "name": "25-H003-WH REPAIR"
+  },
+  {
+    "value": "26",
+    "name": "26-H004-WH BITUNG"
+  },
+  {
+    "value": "27",
+    "name": "27-H005-WH PALEMBANG"
+  },
+  {
+    "value": "28",
+    "name": "28-H006-WH BATAM"
+  },
+  {
+    "value": "29",
+    "name": "29-HXX2-WH SUN PLAZA MEDAN"
+  },
+  {
+    "value": "2A",
+    "name": "2A-J421-HCIR IE SAWOJAJAR MALANG"
+  },
+  {
+    "value": "2C",
+    "name": "2C-J422-HCIR IE LW DENPASAR"
+  },
+  {
+    "value": "2D",
+    "name": "2D-J566-HCIR EYE SOUL SAWOJAJAR"
+  },
+  {
+    "value": "2E",
+    "name": "2E-J567-HCIR EYE SOUL IBCC"
+  },
+  {
+    "value": "2F",
+    "name": "2F-J568-HCIR EYE SOUL LP PASKAL"
+  },
+  {
+    "value": "2G",
+    "name": "2G-J466-HCIR IE LW KOTA WISATA"
+  },
+  {
+    "value": "2H",
+    "name": "2H-J334-HCIR INFORMA YASMIN BOGOR"
+  },
+  {
+    "value": "2I",
+    "name": "2I-J98K-HCIR EXHIBITION 31"
+  },
+  {
+    "value": "2J",
+    "name": "2J-J98L-HCIR EXHIBITION 32"
+  },
+  {
+    "value": "2K",
+    "name": "2K-J98M-HCIR EXHIBITION 33"
+  },
+  {
+    "value": "2L",
+    "name": "2L-J98N-HCIR EXHIBITION 34"
+  },
+  {
+    "value": "2M",
+    "name": "2M-J98O-HCIR EXHIBITION 35"
+  },
+  {
+    "value": "2N",
+    "name": "2N-J607-HCIR IW LP PALEMBANG"
+  },
+  {
+    "value": "2O",
+    "name": "2O-J570-HCIR EYE SOUL AYB"
+  },
+  {
+    "value": "2P",
+    "name": "2P-J720-HCIR SELMA MALL PEKANBARU"
+  },
+  {
+    "value": "2Q",
+    "name": "2Q-J721-HCIR SELMA BATANGHARI JAMBI"
+  },
+  {
+    "value": "2R",
+    "name": "2R-J571-HCIR EYE SOUL LP PAMULANG"
+  },
+  {
+    "value": "2S",
+    "name": "2S-J30C-HCIR INFORMA PEJATEN VILLAG"
+  },
+  {
+    "value": "2T",
+    "name": "2T-J98P-HCIR EXHIBITION 36"
+  },
+  {
+    "value": "2U",
+    "name": "2U-J98Q-HCIR EXHIBITION 37"
+  },
+  {
+    "value": "2V",
+    "name": "2V-J419-HCIR IE SUN EAST MALL"
+  },
+  {
+    "value": "2W",
+    "name": "2W-J420-HCIR IE SUNCITY MADIUN"
+  },
+  {
+    "value": "2X",
+    "name": "2X-J316-HCIR INFORMA GRAND CAKUNG"
+  },
+  {
+    "value": "2Y",
+    "name": "2Y-J410-HCIR IE GRAND CAKUNG"
+  },
+  {
+    "value": "2Z",
+    "name": "2Z-J348-HCIR GD PLMBNG EX RAMAYANA"
+  },
+  {
+    "value": "30",
+    "name": "30-J30I-HCIR INFORMA BINTARO"
+  },
+  {
+    "value": "31",
+    "name": "31-HXX3-INFORMA KEMANG"
+  },
+  {
+    "value": "32",
+    "name": "32-J314-HCIR INFORMA FATMAWATI"
+  },
+  {
+    "value": "33",
+    "name": "33-H325-INFORMA MBG/MALL BALI GALERIA"
+  },
+  {
+    "value": "34",
+    "name": "34-J315-HCIR INFORMA GANDARIA"
+  },
+  {
+    "value": "35",
+    "name": "35-J347-HCIR INFORMA ALAM SUTRA"
+  },
+  {
+    "value": "36",
+    "name": "36-H328-INFORMA SEMARANG"
+  },
+  {
+    "value": "37",
+    "name": "37-J332-HCIR INFORMA TUNJUNGAN PLAZA"
+  },
+  {
+    "value": "38",
+    "name": "38-J328-HCIR INFORMA BOGOR"
+  },
+  {
+    "value": "39",
+    "name": "39-H331-PENDOPO ALAM SUTERA"
+  },
+  {
+    "value": "3D",
+    "name": "3D-JE70-HCIR SELMA VT LW ALSUT TGR"
+  },
+  {
+    "value": "3E",
+    "name": "3E-J739-HCIR SELMA THE PARK KENDARI"
+  },
+  {
+    "value": "3F",
+    "name": "3F-J98S-HCIR EXHIBITION 39"
+  },
+  {
+    "value": "3G",
+    "name": "3G-J98T-HCIR EXHIBITION 40"
+  },
+  {
+    "value": "3H",
+    "name": "3H-J481-HCIR IE PEJATEN VILLAGE"
+  },
+  {
+    "value": "3I",
+    "name": "3I-J30K-HCIR INFORMA CILACAP"
+  },
+  {
+    "value": "3J",
+    "name": "3J-J522-HCIR THYS YASMIN BOGOR"
+  },
+  {
+    "value": "3K",
+    "name": "3K-J30P-HCIR INFORMA KADIPIRO YOGYA"
+  },
+  {
+    "value": "3L",
+    "name": "3L-J30Q-HCIR INFORMA CITIMALL GARUT"
+  },
+  {
+    "value": "3M",
+    "name": "3M-J746-HCIR SELMA PONTIANAK GJH MD"
+  },
+  {
+    "value": "3N",
+    "name": "3N-J489-HCIR IE PONTIANAK GJH MD"
+  },
+  {
+    "value": "3O",
+    "name": "3O-J747-HCIR SELMA CENTRE POINT MDN"
+  },
+  {
+    "value": "3P",
+    "name": "3P-J98R-HCIR EXHIBITION 38"
+  },
+  {
+    "value": "3Q",
+    "name": "3Q-J487-HCIR IE CITIMALL GARUT"
+  },
+  {
+    "value": "3R",
+    "name": "3R-J490-HCIR IE NAGA TAMBUN"
+  },
+  {
+    "value": "3S",
+    "name": "3S-J610-HCIR IW AEON MALL BSD"
+  },
+  {
+    "value": "3T",
+    "name": "3T-J573-HCIR EYE SOUL PEJATEN VILG"
+  },
+  {
+    "value": "3U",
+    "name": "3U-J574-EYESOUL LP BINTARO"
+  },
+  {
+    "value": "3V",
+    "name": "3V-J575-HCIR EYE SOUL CITIMAL GARUT"
+  },
+  {
+    "value": "3W",
+    "name": "3W-J611-HCIR IW PAKUWON SOLO"
+  },
+  {
+    "value": "3X",
+    "name": "3X-J612-HCIR IW QCM SEMARANG"
+  },
+  {
+    "value": "3Y",
+    "name": "3Y-J491-IE SAMARINDA SQUARE"
+  },
+  {
+    "value": "3Z",
+    "name": "3Z-J613-HCIR HG HOMEPRO PKWN SBY"
+  },
+  {
+    "value": "40",
+    "name": "40-J329-HCIR INFORMA EAST COAST SBY"
+  },
+  {
+    "value": "41",
+    "name": "41-H323-INFORMA INFORMA KEMANG"
+  },
+  {
+    "value": "42",
+    "name": "42-J30L-HCIR INFORMA MANADO TOWN SQUARE"
+  },
+  {
+    "value": "43",
+    "name": "43-J353-HCIR INFORMA PARAGON SOLO"
+  },
+  {
+    "value": "44",
+    "name": "44-J340-HCIR INFORMA CENTRE POINT MEDAN"
+  },
+  {
+    "value": "45",
+    "name": "45-J317-HCIR INFORMA CASABLANCA"
+  },
+  {
+    "value": "46",
+    "name": "46-H337-PENDOPO IBCC"
+  },
+  {
+    "value": "47",
+    "name": "47-J384-HCIR INFORMA LIVING PLAZA CINERE"
+  },
+  {
+    "value": "48",
+    "name": "48-H339-INFORMA ACEH"
+  },
+  {
+    "value": "49",
+    "name": "49-H340-GRAND LUCKY RADIO DALAM"
+  },
+  {
+    "value": "4A",
+    "name": "4A-J748-HCIR SELMA PALEMBANG SQUARE"
+  },
+  {
+    "value": "4B",
+    "name": "4B-J614-HCIR IW LW KOTA WISATA"
+  },
+  {
+    "value": "4C",
+    "name": "4C-J30U-HCIR INFORMA PANGKAL PINANG"
+  },
+  {
+    "value": "4D",
+    "name": "4D-J492-HCIR IE PANGKAL PINANG"
+  },
+  {
+    "value": "4E",
+    "name": "4E-J493-IE PLAZA SURABAYA"
+  },
+  {
+    "value": "4F",
+    "name": "4F-J576-EYESOUL LP PETTARANI"
+  },
+  {
+    "value": "4G",
+    "name": "4G-J001-WH HCIR SORTIR JABABEKA"
+  },
+  {
+    "value": "4H",
+    "name": "4H-J749-HCIR SELMA AEON MALL SENTUL"
+  },
+  {
+    "value": "4I",
+    "name": "4I-JE71-HCIR VT SELMA QUEEN CITY"
+  },
+  {
+    "value": "4J",
+    "name": "4J-J31A-HCIR INFORMA LP BANJARMASIN"
+  },
+  {
+    "value": "4K",
+    "name": "4K-J494-HCIR IE LP BANJARMSN"
+  },
+  {
+    "value": "4L",
+    "name": "4L-J495-HCIR IE CIBUBUR JUNCTION"
+  },
+  {
+    "value": "4M",
+    "name": "4M-J31B-HCIR INFORMA TARAKAN"
+  },
+  {
+    "value": "4N",
+    "name": "4N-J30V-ST HCIR INFORMA CIBUBUR JUNCTN"
+  },
+  {
+    "value": "4O",
+    "name": "4O-J30X-ST HCIR INFORMA DUTA M PLNGKRY"
+  },
+  {
+    "value": "4P",
+    "name": "4P-J30Z-HCIR INFORMA LW GRANDWISATA"
+  },
+  {
+    "value": "4Q",
+    "name": "4Q-J496-HCIR IE LP KENDARI"
+  },
+  {
+    "value": "4R",
+    "name": "4R-J31C-HCIR INFORMA ABEPURA JAYAPR"
+  },
+  {
+    "value": "4S",
+    "name": "4S-J497-HCIR IE LW GRAND WISATA"
+  },
+  {
+    "value": "4T",
+    "name": "4T-J750-HCIR SELMA LW GRAND WISATA"
+  },
+  {
+    "value": "4U",
+    "name": "4U-J751-HCIR SELMA PARAGON SQR SRNG"
+  },
+  {
+    "value": "4V",
+    "name": "4V-H523-INFORMA ROXY JEMBER"
+  },
+  {
+    "value": "4W",
+    "name": "4W-J577-HCIR EYESOUL LW GRANDWISATA"
+  },
+  {
+    "value": "4X",
+    "name": "4X-J578-HCIR EYESOUL LP BANJARMASIN"
+  },
+  {
+    "value": "4Y",
+    "name": "4Y-J752-HCIR SELMA LW ALAM SUTERA"
+  },
+  {
+    "value": "4Z",
+    "name": "4Z-J480-HCIR IE BANYUWANGI"
+  },
+  {
+    "value": "50",
+    "name": "50-H008-WH SURABAYA"
+  },
+  {
+    "value": "51",
+    "name": "51-H009-WH MEDAN KIM STAR"
+  },
+  {
+    "value": "52",
+    "name": "52-HXX4-GUDANG TRANSIT"
+  },
+  {
+    "value": "53",
+    "name": "53-H010-WH REPAIR SURABAYA"
+  },
+  {
+    "value": "54",
+    "name": "54-H011-DC INFORMA PLUIT"
+  },
+  {
+    "value": "55",
+    "name": "55-H012-WH INFORMA MAUMBI"
+  },
+  {
+    "value": "56",
+    "name": "56-H341-GRAND PARAGON GAJAH MADA"
+  },
+  {
+    "value": "57",
+    "name": "57-J359-HCIR SAMARINDA SQUARE"
+  },
+  {
+    "value": "58",
+    "name": "58-J322-HCIR INFORMA CENTRAL PARK 2"
+  },
+  {
+    "value": "59",
+    "name": "59-H344-INFORMA PASARAYA"
+  },
+  {
+    "value": "5A",
+    "name": "5A-J753-HCIR SELMA SINGKAWANG G M"
+  },
+  {
+    "value": "5B",
+    "name": "5B-J754-HCIR SELMA CITIMALL DUMAI"
+  },
+  {
+    "value": "5C",
+    "name": "5C-J40A-HCIR IE DUTA MALL PALANGKAR"
+  },
+  {
+    "value": "5D",
+    "name": "5D-J98U-HCIR EXHIBITION 41"
+  },
+  {
+    "value": "5E",
+    "name": "5E-J98V-HCIR EXHIBITION 42"
+  },
+  {
+    "value": "5F",
+    "name": "5F-J98W-HCIR EXHIBITION 43"
+  },
+  {
+    "value": "5G",
+    "name": "5G-J98X-HCIR EXHIBITION 44"
+  },
+  {
+    "value": "5H",
+    "name": "5H-J98Y-HCIR EXHIBITION 45"
+  },
+  {
+    "value": "5I",
+    "name": "5I-J755-HCIR SELMA GATSU BALI"
+  },
+  {
+    "value": "5J",
+    "name": "5J-J579-HCIR EYESOUL CIHAMPELAS WAL"
+  },
+  {
+    "value": "5K",
+    "name": "5K-J40C-HCIR IE LP PALU"
+  },
+  {
+    "value": "5L",
+    "name": "5L-J31F-HCIR INFORMA LP PALU"
+  },
+  {
+    "value": "5M",
+    "name": "5M-J756-HCIR SELMA PANDANARAN SMRNG"
+  },
+  {
+    "value": "5N",
+    "name": "5N-J31G-HCIR INFORMA TASIKMALAYA"
+  },
+  {
+    "value": "5O",
+    "name": "5O-J40D-HCIR IE TASIKMALAYA"
+  },
+  {
+    "value": "5P",
+    "name": "5P-J757-HCIR SELMA CILEGON (NONACTIVE)"
+  },
+  {
+    "value": "5Q",
+    "name": "5Q-J580-HCIR EYESOUL LP PALU"
+  },
+  {
+    "value": "5R",
+    "name": "5R-J40B-HCIR IE PANDANARAN SEMARANG"
+  },
+  {
+    "value": "5S",
+    "name": "5S-H049-WH HCI SORONG"
+  },
+  {
+    "value": "5T",
+    "name": "5T-H050-WH HCI HUB GARUT"
+  },
+  {
+    "value": "5U",
+    "name": "5U-H051-WH HCI HUB BANYUWANGI"
+  },
+  {
+    "value": "5V",
+    "name": "5V-J31I-HCIR INFORMA LP CIANJUR"
+  },
+  {
+    "value": "5W",
+    "name": "5W-J40F-HCIR IE LP CIANJUR"
+  },
+  {
+    "value": "5X",
+    "name": "5X-J40G-HCIR IE BUKITTINGGI"
+  },
+  {
+    "value": "5Y",
+    "name": "5Y-J581-HCIR EYE SOUL LP BATAM"
+  },
+  {
+    "value": "5Z",
+    "name": "5Z-J758-HCIR SELMA BUKITTINGGI"
+  },
+  {
+    "value": "60",
+    "name": "60-H345-INFORMA ASIA PLAZA TASIKMALAYA"
+  },
+  {
+    "value": "61",
+    "name": "61-H346-PENDOPO MAG"
+  },
+  {
+    "value": "62",
+    "name": "62-H347-INFORMA MAG 2"
+  },
+  {
+    "value": "63",
+    "name": "63-H348-INFORMA ASHLEY MAG"
+  },
+  {
+    "value": "64",
+    "name": "64-H333-INFORMA BALE KOTA"
+  },
+  {
+    "value": "65",
+    "name": "65-J386-HCIR INFORMA JAMBI TOWN SQUARE"
+  },
+  {
+    "value": "66",
+    "name": "66-J451-HCIR IE IBCC"
+  },
+  {
+    "value": "67",
+    "name": "67-J383-HCIR INFORMA CITRA RAYA"
+  },
+  {
+    "value": "68",
+    "name": "68-J381-HCIR INFORMA LAMPUNG"
+  },
+  {
+    "value": "69",
+    "name": "69-J432-HCIR IE AYB"
+  },
+  {
+    "value": "6A",
+    "name": "6A-J40H-HCIR IE PEKALONGAN"
+  },
+  {
+    "value": "6B",
+    "name": "6B-J759-HCIR SELMA BASKO CITY MALL"
+  },
+  {
+    "value": "6C",
+    "name": "6C-J40I-HCIR IE BASKO CITY MALL"
+  },
+  {
+    "value": "6D",
+    "name": "6D-J760-HCIR SELMA ARTOS MALL"
+  },
+  {
+    "value": "6E",
+    "name": "6E-J40J-HCIR IE ARTOS MALL"
+  },
+  {
+    "value": "6F",
+    "name": "6F-J31J-HCIR INFORMA BANDA ACEH"
+  },
+  {
+    "value": "6G",
+    "name": "6G-J761-HCIR SELMA BANYUWANGI"
+  },
+  {
+    "value": "6H",
+    "name": "6H-H052-WH HCI LP PALU"
+  },
+  {
+    "value": "6I",
+    "name": "6I-J762-HCIR SELMA PALU GRAND MALL"
+  },
+  {
+    "value": "6J",
+    "name": "6J-J763-HCIR SELMA PLAZA MEDAN FAIR"
+  },
+  {
+    "value": "6K",
+    "name": "6K-J764-HCIR SELMA SIDOARJO"
+  },
+  {
+    "value": "6L",
+    "name": "6L-H053-WH HCI HUB ACEH"
+  },
+  {
+    "value": "6M",
+    "name": "6M-J765-HCIR SELMA CILEGON"
+  },
+  {
+    "value": "6N",
+    "name": "6N-J766-HCIR SELMA CITIMALL TUBAN"
+  },
+  {
+    "value": "6O",
+    "name": "6O-J767-HCIR SELMA RAWALUMBU BEKASI"
+  },
+  {
+    "value": "6P",
+    "name": "6P-J368-HCIR INFORMA JOGJA CITY MLL"
+  },
+  {
+    "value": "6Q",
+    "name": "6Q-J768-HCIR SELMA MALL KARTINI"
+  },
+  {
+    "value": "6R",
+    "name": "6R-H054-WH HCI HUB PEMATANG SIANTAR"
+  },
+  {
+    "value": "6S",
+    "name": "6S-H055-WH HCI HUB TEGAL"
+  },
+  {
+    "value": "6T",
+    "name": "6T-H056-WH HCI HUB BALIKPAPAN"
+  },
+  {
+    "value": "6U",
+    "name": "6U-H057-WH HCI HUB PADANG HCI"
+  },
+  {
+    "value": "6V",
+    "name": "6V-H058-WH HCI HUB BALI HCI"
+  },
+  {
+    "value": "6W",
+    "name": "6W-J769-HCIR SELMA BINJAI MALL"
+  },
+  {
+    "value": "6X",
+    "name": "6X-J770-HCIR SELMA LW DENPASAR"
+  },
+  {
+    "value": "6Y",
+    "name": "6Y-H059-WH HUB HCI PALANGKA RAYA"
+  },
+  {
+    "value": "6Z",
+    "name": "6Z-J772-HCIR SELMA SINGARAJA BALI"
+  },
+  {
+    "value": "70",
+    "name": "70-J460-HCIR IE CINERE"
+  },
+  {
+    "value": "71",
+    "name": "71-H013-WH INFORMA BANJARMASIN"
+  },
+  {
+    "value": "72",
+    "name": "72-H014-DC JABABEKA"
+  },
+  {
+    "value": "73",
+    "name": "73-H015-DC SATELITE SAMARINDA"
+  },
+  {
+    "value": "74",
+    "name": "74-H007-DC TANJUNG MORAWA"
+  },
+  {
+    "value": "75",
+    "name": "75-H016-DC INFORMA BOGOR"
+  },
+  {
+    "value": "76",
+    "name": "76-H017-DC INFORMA JAMBI"
+  },
+  {
+    "value": "77",
+    "name": "77-H018-WH CIKUPA NON M"
+  },
+  {
+    "value": "78",
+    "name": "78-H019-WH TALLO MAKASSAR"
+  },
+  {
+    "value": "79",
+    "name": "79-H020-WH IE BANDUNG"
+  },
+  {
+    "value": "7A",
+    "name": "7A-J40K-HCIR IE SINGARAJA BALI"
+  },
+  {
+    "value": "7B",
+    "name": "7B-J771-HCIR SELMA BJM A YANI"
+  },
+  {
+    "value": "7C",
+    "name": "7C-H060-WH HUB HCI BENGKULU"
+  },
+  {
+    "value": "7D",
+    "name": "7D-J773-HCIR SELMA LW PEKANBARU"
+  },
+  {
+    "value": "7E",
+    "name": "7E-J31K-HCIR IO BJM A YANI"
+  },
+  {
+    "value": "7F",
+    "name": "7F-J774-HCIR SELMA LOMBOK"
+  },
+  {
+    "value": "7G",
+    "name": "7G-J775-HCIR SELMA BREBES MALL"
+  },
+  {
+    "value": "7H",
+    "name": "7H-J40L-HCIR IE LOMBOK"
+  },
+  {
+    "value": "7I",
+    "name": "7I-J31L-HCIR INFORMA METRO LAMPUNG"
+  },
+  {
+    "value": "7J",
+    "name": "7J-J31M-HCIR INFORMA PALOPO MP MALL"
+  },
+  {
+    "value": "7K",
+    "name": "7K-J40N-HCIR IE PALOPO MP MALL"
+  },
+  {
+    "value": "7L",
+    "name": "7L-J31N-HCIR IO GRAND CITY SBY"
+  },
+  {
+    "value": "7M",
+    "name": "7M-J31O-HCIR INFORMA LP LP RAJABAS"
+  },
+  {
+    "value": "7O",
+    "name": "7O-J776-HCIR SELMA 23 SEMARANG"
+  },
+  {
+    "value": "7P",
+    "name": "7P-J40O-HCIR IE 23 SEMARANG"
+  },
+  {
+    "value": "7Q",
+    "name": "7Q-J582-HCIR EYESOUL LP LMP RAJABSA"
+  },
+  {
+    "value": "7R",
+    "name": "7R-J777-HCIR SELMA TRANS PEKALONGAN"
+  },
+  {
+    "value": "7S",
+    "name": "7S-J583-HCIR EYESOUL MERR SURABAYA"
+  },
+  {
+    "value": "7T",
+    "name": "7T-J31Q-HCIR INFORMA TRANS SUNTER"
+  },
+  {
+    "value": "7U",
+    "name": "7U-J31P-HCIR INFORMA MERR SURABAYA"
+  },
+  {
+    "value": "7V",
+    "name": "7V-J40R-HCIR IE MERR SURABAYA"
+  },
+  {
+    "value": "7W",
+    "name": "7W-J779-HCIR SELMA GRESSMALL GRESIK"
+  },
+  {
+    "value": "7Y",
+    "name": "7Y-J781-HCIR SELMA OUTLET LP CIPUTA"
+  },
+  {
+    "value": "80",
+    "name": "80-J569-HCIR EYE SOUL LP TSM"
+  },
+  {
+    "value": "81",
+    "name": "81-J337-HCIR INFORMA MARICAYA LATANETTE MAKASAR"
+  },
+  {
+    "value": "82",
+    "name": "82-J394-HCIR INFORMA AMBARUKMO YOGYA"
+  },
+  {
+    "value": "83",
+    "name": "83-J311-HCIR INFORMA BAYWALK PLUIT"
+  },
+  {
+    "value": "84",
+    "name": "84-H360-INFORMA STAR SQUARE MANADO"
+  },
+  {
+    "value": "85",
+    "name": "85-J362-ASHLEY HARTONO MALL SOLO"
+  },
+  {
+    "value": "86",
+    "name": "86-J414-HCIR IE DEPOK"
+  },
+  {
+    "value": "87",
+    "name": "87-J341-HCIR INFORMA Q MALL BANJARMASIN"
+  },
+  {
+    "value": "88",
+    "name": "88-J409-HCIR IE GANDARIA"
+  },
+  {
+    "value": "89",
+    "name": "89-J324-HCIR INFORMA PADJADJARAN WALK BOGOR"
+  },
+  {
+    "value": "90",
+    "name": "90-J385-HCIR ASHLEY GRAND MET BKS"
+  },
+  {
+    "value": "91",
+    "name": "91-J443-HCIR IE MARICAYA LATANETTE MAKASAR"
+  },
+  {
+    "value": "92",
+    "name": "92-J406-HCIR IE BAYWALK PLUIT"
+  },
+  {
+    "value": "93",
+    "name": "93-J312-HCIR INFORMA CIBINONG CITY MALL"
+  },
+  {
+    "value": "94",
+    "name": "94-J378-HCIR INFORMA TEKNO MART KARAWANG"
+  },
+  {
+    "value": "95",
+    "name": "95-H995-ST INFORMA H995"
+  },
+  {
+    "value": "96",
+    "name": "96-H996-ST INFORMA H996"
+  },
+  {
+    "value": "97",
+    "name": "97-H998-ST INFORMA H998"
+  },
+  {
+    "value": "98",
+    "name": "98-H997-ST INFORMA H997"
+  },
+  {
+    "value": "99",
+    "name": "99-H999-ST INFORMA H999"
+  },
+  {
+    "value": "A0",
+    "name": "A0-H551-HOME GALERIA GALAXY SBY"
+  },
+  {
+    "value": "A1",
+    "name": "A1-H381-INFORMA GAPURA PRIMA"
+  },
+  {
+    "value": "A2",
+    "name": "A2-J407-HCIR IE CIBINONG CITY MALL"
+  },
+  {
+    "value": "A3",
+    "name": "A3-J30Y-HCIR INFORMA LENMARC SBY"
+  },
+  {
+    "value": "A4",
+    "name": "A4-H375-BED &amp; LINEN LENMARC"
+  },
+  {
+    "value": "A5",
+    "name": "A5-J444-HCIR IE CIBUBUR TIMES SQUARE"
+  },
+  {
+    "value": "A6",
+    "name": "A6-J323-HCIR INFORMA TAMAN PALEM BOGOR/PADJAJARAN 21"
+  },
+  {
+    "value": "A7",
+    "name": "A7-J417-HCIR IE TAMAN PALEM BOGOR/PADJAJARAN 21"
+  },
+  {
+    "value": "A8",
+    "name": "A8-H382-INFORMA PANAM"
+  },
+  {
+    "value": "A9",
+    "name": "A9-H377-INFORMA BINJAI SUMUT"
+  },
+  {
+    "value": "AA",
+    "name": "AA-J717-HCIR SELMA SUN EAST MALL"
+  },
+  {
+    "value": "AB",
+    "name": "AB-H730-SELMA GRAND MALL BKS"
+  },
+  {
+    "value": "AC",
+    "name": "AC-J507-HCIR SUSEN ROYAL PLZ SBY"
+  },
+  {
+    "value": "AD",
+    "name": "AD-J718-HCIR SELMA SUNCITY MADIUN"
+  },
+  {
+    "value": "AE",
+    "name": "AE-J464-HCIR IE SUNCITY SIDOARJO"
+  },
+  {
+    "value": "AF",
+    "name": "AF-J514-HCIR THYS LP CINERE"
+  },
+  {
+    "value": "AH",
+    "name": "AH-H204-HO SUSEN"
+  },
+  {
+    "value": "AI",
+    "name": "AI-J506-HCIR SUSEN SUNCITY MADIUN"
+  },
+  {
+    "value": "AJ",
+    "name": "AJ-J509-HCIR THYS QBIG BSD"
+  },
+  {
+    "value": "AK",
+    "name": "AK-H533-SUSEN LP PAMULANG"
+  },
+  {
+    "value": "AL",
+    "name": "AL-H534-SUSEN AYB"
+  },
+  {
+    "value": "AM",
+    "name": "AM-H536-SUSEN CITIMALL CIANJUR"
+  },
+  {
+    "value": "AN",
+    "name": "AN-J411-HCIR IE GRAND CIMANGGIS"
+  },
+  {
+    "value": "AP",
+    "name": "AP-H202-HO INFORMA ELECTRONIC"
+  },
+  {
+    "value": "AQ",
+    "name": "AQ-H203-HO SELMA"
+  },
+  {
+    "value": "AR",
+    "name": "AR-H535-SUSEN LP KHI"
+  },
+  {
+    "value": "AS",
+    "name": "AS-J327-HCIR INFORMA SUKABUMI"
+  },
+  {
+    "value": "AT",
+    "name": "AT-J715-HCIR SELMA MEGAMALL MANADO"
+  },
+  {
+    "value": "AU",
+    "name": "AU-J505-HCIR SUSEN MEGAMALL MANADO"
+  },
+  {
+    "value": "AV",
+    "name": "AV-J415-HCIR IE MEGAMALL MANADO"
+  },
+  {
+    "value": "AW",
+    "name": "AW-J418-HCIR IE SUKABUMI KOSASIH"
+  },
+  {
+    "value": "AY",
+    "name": "AY-J465-HCIR IE LA PLZ LAMONGAN"
+  },
+  {
+    "value": "B1",
+    "name": "B1-J372-HCIR INFORMA DAGO PLAZA BANDUNG"
+  },
+  {
+    "value": "B2",
+    "name": "B2-J452-HCIR IE E DAGO PLAZA BDG"
+  },
+  {
+    "value": "B3",
+    "name": "B3-J367-INFORMA LP TASIK"
+  },
+  {
+    "value": "B4",
+    "name": "B4-H385-IE BINJAI SUMUT"
+  },
+  {
+    "value": "B5",
+    "name": "B5-J431-HCIR IE LP PETTARANI"
+  },
+  {
+    "value": "B6",
+    "name": "B6-J343-HCIR INFORMA LP PETTARANI"
+  },
+  {
+    "value": "B7",
+    "name": "B7-J446-IE LP TASIKMALAYA"
+  },
+  {
+    "value": "B8",
+    "name": "B8-J430-HCIR IE ALAM SUTERA"
+  },
+  {
+    "value": "B9",
+    "name": "B9-H021-WH KOMBOSS"
+  },
+  {
+    "value": "BA",
+    "name": "BA-J730-HCIR SELMA LA PLZ LAMONGAN"
+  },
+  {
+    "value": "BC",
+    "name": "BC-J560-HCIR EYE SOUL LW PEKANBARU"
+  },
+  {
+    "value": "BD",
+    "name": "BD-J559-HCIR EYE SOUL LP KHI"
+  },
+  {
+    "value": "BE",
+    "name": "BE-J558-HCIR EYE SOUL QC SEMARANG"
+  },
+  {
+    "value": "BF",
+    "name": "BF-J712-HCIR SELMA DEPOK TOWN SQ"
+  },
+  {
+    "value": "BG",
+    "name": "BG-J556-HCIR EYE SOUL LP BALIKPAPAN"
+  },
+  {
+    "value": "BH",
+    "name": "BH-J703-HCIR SELMA CBD CILEDUG"
+  },
+  {
+    "value": "BI",
+    "name": "BI-J600-HCIR HG GALAXY 1 SBY"
+  },
+  {
+    "value": "BJ",
+    "name": "BJ-J500-HCIR SUSEN GALAXY 1"
+  },
+  {
+    "value": "BK",
+    "name": "BK-J550-HCIR EYE SOUL GALAXY"
+  },
+  {
+    "value": "BL",
+    "name": "BL-J400-HCIR IE GALAXY 1 SBY"
+  },
+  {
+    "value": "BM",
+    "name": "BM-J303-HCIR MAGELANG TIDAR"
+  },
+  {
+    "value": "BN",
+    "name": "BN-J304-HCIR PALEM SEMI"
+  },
+  {
+    "value": "BO",
+    "name": "BO-J700-HCIR SELMA KALIBATA"
+  },
+  {
+    "value": "BP",
+    "name": "BP-J552-HCIR EYE SOUL LP JABABEKA"
+  },
+  {
+    "value": "BQ",
+    "name": "BQ-J553-HCIR EYE SOUL LW ALSUT"
+  },
+  {
+    "value": "BR",
+    "name": "BR-J701-HCIR SELMA PALUR PLASA"
+  },
+  {
+    "value": "BS",
+    "name": "BS-J702-HCIR SELMA MEGA BENGKULU"
+  },
+  {
+    "value": "BT",
+    "name": "BT-J305-HCIR HERTASNING SULAWESI"
+  },
+  {
+    "value": "BU",
+    "name": "BU-J300-HO HCIR HEAD OFFICE"
+  },
+  {
+    "value": "BV",
+    "name": "BV-J301-HCIR ANTASARI LMPNG"
+  },
+  {
+    "value": "BW",
+    "name": "BW-J401-HCIR IE ANTASARI LAMPUNG"
+  },
+  {
+    "value": "BX",
+    "name": "BX-J501-HCIR SUSEN ANTASARI LAMPUNG"
+  },
+  {
+    "value": "BY",
+    "name": "BY-J551-HCIR EYE SOUL ANTASARI LAMP"
+  },
+  {
+    "value": "BZ",
+    "name": "BZ-J302-HCIR GALAXY 1 SBY"
+  },
+  {
+    "value": "C0",
+    "name": "C0-J374-HCIR INFORMA BANDA ACEH"
+  },
+  {
+    "value": "C1",
+    "name": "C1-H391-ST NORDIA MAG"
+  },
+  {
+    "value": "C2",
+    "name": "C2-J30H-HCIR INFORMA LIPPO PLAZA KUPANG"
+  },
+  {
+    "value": "C3",
+    "name": "C3-J479-HCIR IE MANADO"
+  },
+  {
+    "value": "C4",
+    "name": "C4-J476-HCIR IE LP BINTARO"
+  },
+  {
+    "value": "C5",
+    "name": "C5-J445-IE KARAWACI"
+  },
+  {
+    "value": "C6",
+    "name": "C6-J454-HCIR IE KARAWANG TEKNO"
+  },
+  {
+    "value": "C7",
+    "name": "C7-J356-HCIR INFORMA HARTONO MALL YOGYA"
+  },
+  {
+    "value": "C8",
+    "name": "C8-J345-HCIR INFORMA LOMBOK EPICENTRUM MALL"
+  },
+  {
+    "value": "C9",
+    "name": "C9-J364-INFORMA CIPUTAT POIN"
+  },
+  {
+    "value": "CA",
+    "name": "CA-J557-HCIR EYE SOUL LP PERINTIS"
+  },
+  {
+    "value": "CB",
+    "name": "CB-J704-HCIR SELMA NAGA TAMBUN"
+  },
+  {
+    "value": "CC",
+    "name": "CC-J555-HCIR EYE SOUL LP CNR"
+  },
+  {
+    "value": "CD",
+    "name": "CD-J920-HCIR EYE SOUL EXHIBITION 1"
+  },
+  {
+    "value": "CF",
+    "name": "CF-J502-HCIR SUSEN HERTASNING MKS"
+  },
+  {
+    "value": "CG",
+    "name": "CG-J402-HCIR IE HERTASNING MKS"
+  },
+  {
+    "value": "CH",
+    "name": "CH-J921-HCIR EYE SOUL EXHIBITION 2"
+  },
+  {
+    "value": "CI",
+    "name": "CI-J922-HCIR EYE SOUL EXHIBITION 3"
+  },
+  {
+    "value": "CJ",
+    "name": "CJ-J923-HCIR EYE SOUL EXHIBITION 4"
+  },
+  {
+    "value": "CK",
+    "name": "CK-J924-HCIR EYE SOUL EXHIBITION 5"
+  },
+  {
+    "value": "CL",
+    "name": "CL-J563-HCIR EYE SOUL GANCIT"
+  },
+  {
+    "value": "CN",
+    "name": "CN-J926-HCIR EYE SOUL EXHIBITION 7"
+  },
+  {
+    "value": "CO",
+    "name": "CO-J927-HCIR EYE SOUL EXHIBITION 8"
+  },
+  {
+    "value": "CP",
+    "name": "CP-J561-HCIR EYE SOUL HERTASNING MK"
+  },
+  {
+    "value": "CS",
+    "name": "CS-J562-HCIR EYE SOUL QBIG"
+  },
+  {
+    "value": "CT",
+    "name": "CT-J940-HCIR SELMA EXHIBITION 1"
+  },
+  {
+    "value": "CU",
+    "name": "CU-J307-HCIR INFORMA LP PURI"
+  },
+  {
+    "value": "CV",
+    "name": "CV-J403-HCIR IE LP CIPUTAT"
+  },
+  {
+    "value": "CW",
+    "name": "CW-J404-HCIR IE LP PURI"
+  },
+  {
+    "value": "CX",
+    "name": "CX-J565-HCIR EYE SOUL LP PURI"
+  },
+  {
+    "value": "CZ",
+    "name": "CZ-J554-HCIR EYE SOUL LP CIREBON"
+  },
+  {
+    "value": "D0",
+    "name": "D0-H398-INFORMA KUBU RAYA"
+  },
+  {
+    "value": "D1",
+    "name": "D1-J351-HCIR INFORMA S.PARMAN MDN"
+  },
+  {
+    "value": "D2",
+    "name": "D2-H022-WH INFORMA NON M JABABEKA"
+  },
+  {
+    "value": "D3",
+    "name": "D3-J352-HCIR INFORMA LP CIREBON"
+  },
+  {
+    "value": "D4",
+    "name": "D4-J354-HCIR INFORMA TGR QBIG BSD"
+  },
+  {
+    "value": "D5",
+    "name": "D5-H403-INFORMA GATSU DENPASAR RTC"
+  },
+  {
+    "value": "D6",
+    "name": "D6-J339-HCIR INFORMA LW PEKANBARU"
+  },
+  {
+    "value": "D7",
+    "name": "D7-J390-HCIR INFORMA PONTIANAK"
+  },
+  {
+    "value": "D8",
+    "name": "D8-J375-HCIR INFORMA LIPPO PLAZA JEMBER"
+  },
+  {
+    "value": "D9",
+    "name": "D9-J434-HCIR IE LP Cirebon"
+  },
+  {
+    "value": "DA",
+    "name": "DA-J705-HCIR SELMA PLAZA SURABAYA"
+  },
+  {
+    "value": "DB",
+    "name": "DB-J706-HCIR SELMA SOLO SQUARE"
+  },
+  {
+    "value": "DC",
+    "name": "DC-J707-HCIR SELMA CITIMALL PRABUMU"
+  },
+  {
+    "value": "DD",
+    "name": "DD-J941-HCIR SELMA EXHIBITION 2"
+  },
+  {
+    "value": "DE",
+    "name": "DE-J942-HCIR SELMA EXHIBITION 3"
+  },
+  {
+    "value": "DF",
+    "name": "DF-J943-HCIR SELMA EXHIBITION 4"
+  },
+  {
+    "value": "DG",
+    "name": "DG-J944-HCIR SELMA EXHIBITION 5"
+  },
+  {
+    "value": "DH",
+    "name": "DH-J945-HCIR SELMA EXHIBITION 6"
+  },
+  {
+    "value": "DI",
+    "name": "DI-J946-HCIR SELMA EXHIBITION 7"
+  },
+  {
+    "value": "DJ",
+    "name": "DJ-J947-HCIR SELMA EXHIBITION 8"
+  },
+  {
+    "value": "DK",
+    "name": "DK-J948-HCIR SELMA EXHIBITION 9"
+  },
+  {
+    "value": "DL",
+    "name": "DL-J949-HCIR SELMA EXHIBITION 10"
+  },
+  {
+    "value": "DM",
+    "name": "DM-J708-HCIR SELMA CITI SKB"
+  },
+  {
+    "value": "DN",
+    "name": "DN-H032-WH HCI MALUKU"
+  },
+  {
+    "value": "DO",
+    "name": "DO-J335-HCIR INFORMA EMPORIUM PLUIT"
+  },
+  {
+    "value": "DP",
+    "name": "DP-J601-HCIR IS MALL BASSURA"
+  },
+  {
+    "value": "DQ",
+    "name": "DQ-J925-HCIR EYE SOUL EXHIBITION 6"
+  },
+  {
+    "value": "DR",
+    "name": "DR-J602-HCIR IW LP LATANETE MKS"
+  },
+  {
+    "value": "DT",
+    "name": "DT-J604-HCIR IW LP KHI BEKASI"
+  },
+  {
+    "value": "DU",
+    "name": "DU-J308-HCIR INFORMA LW DENPASAR"
+  },
+  {
+    "value": "DV",
+    "name": "DV-J605-HCIR IW MEGAMALL MANADO"
+  },
+  {
+    "value": "DX",
+    "name": "DX-J503-HCIR THYS LW DENPASAR"
+  },
+  {
+    "value": "DY",
+    "name": "DY-J326-HCIR INFORMA PEKALONGAN"
+  },
+  {
+    "value": "DZ",
+    "name": "DZ-J564-HCIR EYE SOUL LW DENPASAR"
+  },
+  {
+    "value": "E0",
+    "name": "E0-J436-HCIR IE QBIG"
+  },
+  {
+    "value": "E1",
+    "name": "E1-J355-HCIR INFORMA LP PASKAL BDG"
+  },
+  {
+    "value": "E2",
+    "name": "E2-J377-HCIR INFORMA LP CIPUTAT"
+  },
+  {
+    "value": "E3",
+    "name": "E3-J357-HCIR INFORMA LP BALIKPAPAN"
+  },
+  {
+    "value": "E4",
+    "name": "E4-J360-HCIR INFORMA LP PURWOKERTO"
+  },
+  {
+    "value": "E5",
+    "name": "E5-J363-INFORMA DAMAR PADANG"
+  },
+  {
+    "value": "E6",
+    "name": "E6-J330-HCIR INFORMA TUNJUNGAN PLAZA 6"
+  },
+  {
+    "value": "E7",
+    "name": "E7-H415-SELMA CIJANTUNG"
+  },
+  {
+    "value": "E8",
+    "name": "E8-J391-HCIR ST INFORMA LP KHI BEKASI"
+  },
+  {
+    "value": "E9",
+    "name": "E9-J30M-HCIR INFORMA BALI SUNSET"
+  },
+  {
+    "value": "EU",
+    "name": "EU-J309-HCIR INFORMA SAWOJAJAR MLNG"
+  },
+  {
+    "value": "EV",
+    "name": "EV-J950-HCIR SELMA EXHIBITION 11"
+  },
+  {
+    "value": "EW",
+    "name": "EW-J951-HCIR SELMA EXHIBITION 12"
+  },
+  {
+    "value": "EX",
+    "name": "EX-J952-HCIR SELMA EXHIBITION 13"
+  },
+  {
+    "value": "EY",
+    "name": "EY-J953-HCIR SELMA EXHIBITION 14"
+  },
+  {
+    "value": "EZ",
+    "name": "EZ-J954-HCIR SELMA EXHIBITION 15"
+  },
+  {
+    "value": "F0",
+    "name": "F0-H023-WH INFORMA NON M CIKARANG"
+  },
+  {
+    "value": "F1",
+    "name": "F1-J395-HCIR INFORMA ICON GRESIK"
+  },
+  {
+    "value": "F2",
+    "name": "F2-J370-HCIR INFORMA CILEGON MALL CLG"
+  },
+  {
+    "value": "F3",
+    "name": "F3-J366-HCIR INFORMA BIG MALL SMD"
+  },
+  {
+    "value": "F4",
+    "name": "F4-J30R-HCIR INFORMA PALEMBANG PTC"
+  },
+  {
+    "value": "F5",
+    "name": "F5-J336-HCIR INFORMA BATAM CENTER"
+  },
+  {
+    "value": "F6",
+    "name": "F6-J30T-HCIR INFORMA BENGKULU BENCOOLEN"
+  },
+  {
+    "value": "F7",
+    "name": "F7-H424-INFORMA SBY GRAND CITY"
+  },
+  {
+    "value": "F8",
+    "name": "F8-H425-INFORMA BTC MALL BEKASI"
+  },
+  {
+    "value": "F9",
+    "name": "F9-J30S-HCIR INFORMA KEDIRI MALL"
+  },
+  {
+    "value": "FA",
+    "name": "FA-H044-WH HCI BANYUMAS"
+  },
+  {
+    "value": "FB",
+    "name": "FB-J31D-HCIR INFORMA BANYUWANGI"
+  },
+  {
+    "value": "FC",
+    "name": "FC-J498-HCIR IE KADIPIRO YOGYAKARTA"
+  },
+  {
+    "value": "FD",
+    "name": "FD-J31E-HCIR INFORMA SIANTAR C SQRE"
+  },
+  {
+    "value": "FE",
+    "name": "FE-J499-HCIR IE SIANTAR CITY SQUARE"
+  },
+  {
+    "value": "FF",
+    "name": "FF-H045-WH HCI HUB PEKANBARU"
+  },
+  {
+    "value": "FG",
+    "name": "FG-H046-WH HCI HUB BANYUWANGI"
+  },
+  {
+    "value": "FH",
+    "name": "FH-H047-WH HCI HUB JEMBER"
+  },
+  {
+    "value": "FI",
+    "name": "FI-J955-HCIR SELMA EXHIBITION 16"
+  },
+  {
+    "value": "FJ",
+    "name": "FJ-J956-HCIR SELMA EXHIBITION 17"
+  },
+  {
+    "value": "FK",
+    "name": "FK-J957-HCIR SELMA EXHIBITION 18"
+  },
+  {
+    "value": "FL",
+    "name": "FL-J958-HCIR SELMA EXHIBITION 19"
+  },
+  {
+    "value": "FM",
+    "name": "FM-J959-HCIR SELMA EXHIBITION 20"
+  },
+  {
+    "value": "FN",
+    "name": "FN-J778-HCIR SELMA TRANSMART PADANG"
+  },
+  {
+    "value": "FO",
+    "name": "FO-J31R-HCIR INFORMA NUSA DUA BALI"
+  },
+  {
+    "value": "FP",
+    "name": "FP-J40T-HCIR IE NUSA DUA BALI"
+  },
+  {
+    "value": "FQ",
+    "name": "FQ-J40S-HCIR IE TRANS SUNTER"
+  },
+  {
+    "value": "FR",
+    "name": "FR-J99O-HCIR EXHIBITION 61"
+  },
+  {
+    "value": "FS",
+    "name": "FS-J99P-HCIR EXHIBITION 62"
+  },
+  {
+    "value": "FT",
+    "name": "FT-J99Q-HCIR EXHIBITION 63"
+  },
+  {
+    "value": "FU",
+    "name": "FU-J99R-HCIR EXHIBITION 64"
+  },
+  {
+    "value": "FV",
+    "name": "FV-J99S-HCIR EXHIBITION 65"
+  },
+  {
+    "value": "FW",
+    "name": "FW-J94A-HCIR SELMA EXHIBITION 21"
+  },
+  {
+    "value": "FX",
+    "name": "FX-J94B-HCIR SELMA EXHIBITION 22"
+  },
+  {
+    "value": "G0",
+    "name": "G0-J716-HCIR SELMA PGC"
+  },
+  {
+    "value": "G1",
+    "name": "G1-H024-WH HCI HUB BOGOR"
+  },
+  {
+    "value": "G2",
+    "name": "G2-J709-HCIR SELMA BASSURA CITY"
+  },
+  {
+    "value": "G3",
+    "name": "G3-J397-HCIR INFORMA SLEMAN CITY MALL"
+  },
+  {
+    "value": "G4",
+    "name": "G4-H025-WH HCI BATAM"
+  },
+  {
+    "value": "G5",
+    "name": "G5-J30N-HCIR INFORMA SILIWANGI SMG"
+  },
+  {
+    "value": "G6",
+    "name": "G6-J740-HCIR SELMA BDG BEC"
+  },
+  {
+    "value": "G7",
+    "name": "G7-J731-HCIR SELMA DPK TOWN CTR"
+  },
+  {
+    "value": "G8",
+    "name": "G8-J396-HCIR INFORMA MALUKU CITY MALL"
+  },
+  {
+    "value": "G9",
+    "name": "G9-J710-HCIR SELMA CIPINANG INDAH MALL"
+  },
+  {
+    "value": "GA",
+    "name": "GA-J980-HCIR EXHIBITION 01"
+  },
+  {
+    "value": "GB",
+    "name": "GB-J981-HCIR EXHIBITION 02"
+  },
+  {
+    "value": "GC",
+    "name": "GC-J982-HCIR EXHIBITION 03"
+  },
+  {
+    "value": "GD",
+    "name": "GD-J983-HCIR EXHIBITION 04"
+  },
+  {
+    "value": "GE",
+    "name": "GE-J984-HCIR EXHIBITION 05"
+  },
+  {
+    "value": "GF",
+    "name": "GF-J985-HCIR EXHIBITION 06"
+  },
+  {
+    "value": "GG",
+    "name": "GG-J986-HCIR EXHIBITION 07"
+  },
+  {
+    "value": "GH",
+    "name": "GH-J987-HCIR EXHIBITION 08"
+  },
+  {
+    "value": "GI",
+    "name": "GI-J988-HCIR EXHIBITION 09"
+  },
+  {
+    "value": "GJ",
+    "name": "GJ-J989-HCIR EXHIBITION 10"
+  },
+  {
+    "value": "GK",
+    "name": "GK-J990-HCIR EXHIBITION 11"
+  },
+  {
+    "value": "GL",
+    "name": "GL-J991-HCIR EXHIBITION 12"
+  },
+  {
+    "value": "GM",
+    "name": "GM-J992-HCIR EXHIBITION 13"
+  },
+  {
+    "value": "GN",
+    "name": "GN-J993-HCIR EXHIBITION 14"
+  },
+  {
+    "value": "GO",
+    "name": "GO-J994-HCIR EXHIBITION 15"
+  },
+  {
+    "value": "GP",
+    "name": "GP-J995-HCIR EXHIBITION 16"
+  },
+  {
+    "value": "GQ",
+    "name": "GQ-J996-HCIR EXHIBITION 17"
+  },
+  {
+    "value": "GR",
+    "name": "GR-J997-HCIR EXHIBITION 18"
+  },
+  {
+    "value": "GS",
+    "name": "GS-J998-HCIR EXHIBITION 19"
+  },
+  {
+    "value": "GT",
+    "name": "GT-J999-HCIR EXHIBITION 20"
+  },
+  {
+    "value": "GU",
+    "name": "GU-J98Z-HCIR EXHIBITION 46"
+  },
+  {
+    "value": "GV",
+    "name": "GV-J99A-HCIR EXHIBITION 47"
+  },
+  {
+    "value": "GW",
+    "name": "GW-J99B-HCIR EXHIBITION 48"
+  },
+  {
+    "value": "GX",
+    "name": "GX-J99C-HCIR EXHIBITION 49"
+  },
+  {
+    "value": "GY",
+    "name": "GY-J99D-HCIR EXHIBITION 50"
+  },
+  {
+    "value": "GZ",
+    "name": "GZ-J99E-HCIR EXHIBITION 51"
+  },
+  {
+    "value": "H0",
+    "name": "H0-J379-HCIR INFORMA METRO INDAH BDG"
+  },
+  {
+    "value": "H1",
+    "name": "H1-H431-INFORMA VNESIA MALL"
+  },
+  {
+    "value": "H2",
+    "name": "H2-J30F-HCIR INFORMA DELI PARK MDN"
+  },
+  {
+    "value": "H3",
+    "name": "H3-J30B-HCIR INFORMA GRAND BATAM"
+  },
+  {
+    "value": "H4",
+    "name": "H4-J393-HCIR INFORMA GATEWAY BDG"
+  },
+  {
+    "value": "H5",
+    "name": "H5-J713-HCIR SELMA LIPPO KRAMAT JATI"
+  },
+  {
+    "value": "H6",
+    "name": "H6-H026-WH HCI SIDOARJO"
+  },
+  {
+    "value": "H7",
+    "name": "H7-J30D-HCIR INFORMA SULTAN AGUNG LMP"
+  },
+  {
+    "value": "H8",
+    "name": "H8-J30W-HCIR INFORMA MIKO MALL BDG"
+  },
+  {
+    "value": "H9",
+    "name": "H9-J319-HCIR INFORMA LIPPO KEMANG"
+  },
+  {
+    "value": "HA",
+    "name": "HA-J960-HCIR IE EXHIBITION 01"
+  },
+  {
+    "value": "HB",
+    "name": "HB-J961-HCIR IE EXHIBITION 02"
+  },
+  {
+    "value": "HC",
+    "name": "HC-J962-HCIR IE EXHIBITION 03"
+  },
+  {
+    "value": "HD",
+    "name": "HD-J963-HCIR IE EXHIBITION 04"
+  },
+  {
+    "value": "HE",
+    "name": "HE-J964-HCIR IE EXHIBITION 05"
+  },
+  {
+    "value": "HF",
+    "name": "HF-J965-HCIR IE EXHIBITION 06"
+  },
+  {
+    "value": "HG",
+    "name": "HG-J966-HCIR IE EXHIBITION 07"
+  },
+  {
+    "value": "HH",
+    "name": "HH-J967-HCIR IE EXHIBITION 08"
+  },
+  {
+    "value": "HI",
+    "name": "HI-J968-HCIR IE EXHIBITION 09"
+  },
+  {
+    "value": "HJ",
+    "name": "HJ-J969-HCIR IE EXHIBITION 10"
+  },
+  {
+    "value": "HK",
+    "name": "HK-J447-HCIR IE LP PALEMBANG"
+  },
+  {
+    "value": "HL",
+    "name": "HL-J970-HCIR IE EXHIBITION 11"
+  },
+  {
+    "value": "HM",
+    "name": "HM-J971-HCIR IE EXHIBITION 12"
+  },
+  {
+    "value": "HQ",
+    "name": "HQ-J99F-HCIR EXHIBITION 52"
+  },
+  {
+    "value": "HR",
+    "name": "HR-J99G-HCIR EXHIBITION 53"
+  },
+  {
+    "value": "HS",
+    "name": "HS-J99H-HCIR EXHIBITION 54"
+  },
+  {
+    "value": "HT",
+    "name": "HT-J99I-HCIR EXHIBITION 55"
+  },
+  {
+    "value": "HU",
+    "name": "HU-J99J-HCIR EXHIBITION 56"
+  },
+  {
+    "value": "HV",
+    "name": "HV-J99K-HCIR EXHIBITION 57"
+  },
+  {
+    "value": "HW",
+    "name": "HW-J99L-HCIR EXHIBITION 58"
+  },
+  {
+    "value": "HX",
+    "name": "HX-J99M-HCIR EXHIBITION 59"
+  },
+  {
+    "value": "HY",
+    "name": "HY-J99N-HCIR EXHIBITION 60"
+  },
+  {
+    "value": "I0",
+    "name": "I0-J30G-HCIR INFORMA QUEEN CITY SMG"
+  },
+  {
+    "value": "I1",
+    "name": "I1-J719-HCIR SELMA BG JUNCTION SBY"
+  },
+  {
+    "value": "I2",
+    "name": "I2-J399-HCIR INFORMA KENDARI"
+  },
+  {
+    "value": "I3",
+    "name": "I3-J373-HCIR INFORMA DUTA MALL BJM"
+  },
+  {
+    "value": "I4",
+    "name": "I4-H441-INFORMA CIPUTRA WORLD SBY"
+  },
+  {
+    "value": "I5",
+    "name": "I5-J30E-HCIR INFORMA JAVAMALL SMG"
+  },
+  {
+    "value": "I6",
+    "name": "I6-J743-HCIR SELMA JOGJA CITY MALL"
+  },
+  {
+    "value": "I7",
+    "name": "I7-J398-HCIR INFORMA LP JABABEKA BKS"
+  },
+  {
+    "value": "I8",
+    "name": "I8-J736-HCIR SELMA CIKAMPEK MALL"
+  },
+  {
+    "value": "I9",
+    "name": "I9-J741-HCIR SELMA BTC FASHION MALL BDG"
+  },
+  {
+    "value": "IA",
+    "name": "IA-H048-WH HCI LOMBOK"
+  },
+  {
+    "value": "IB",
+    "name": "IB-H061-WH HCI KUPANG"
+  },
+  {
+    "value": "IC",
+    "name": "IC-J31S-HCIR IO BINJAI MALL"
+  },
+  {
+    "value": "IH",
+    "name": "IH-H063-WH HUB HCI PALOPO"
+  },
+  {
+    "value": "II",
+    "name": "II-H064-WH HCI CIKANDE"
+  },
+  {
+    "value": "J0",
+    "name": "J0-J734-HCIR SELMA MEGA HYPERMALL BKS"
+  },
+  {
+    "value": "J1",
+    "name": "J1-J735-HCIR SELMA PLZ CIBUBUR"
+  },
+  {
+    "value": "J2",
+    "name": "J2-J745-HCIR SELMA BOXIES BOGOR"
+  },
+  {
+    "value": "J3",
+    "name": "J3-J727-HCIR SELMA TAMINI SQUARE"
+  },
+  {
+    "value": "J4",
+    "name": "J4-J738-HCIR SELMA PANBIL BATAM"
+  },
+  {
+    "value": "J5",
+    "name": "J5-J733-HCIR SELMA CIREBON SUPERBLOK"
+  },
+  {
+    "value": "J6",
+    "name": "J6-H716-SELMA VIVO SENTUL"
+  },
+  {
+    "value": "J7",
+    "name": "J7-J380-HCIR INFORMA GORONTALO"
+  },
+  {
+    "value": "J8",
+    "name": "J8-J388-HCIR INFORMA THE PARK SAWANGAN"
+  },
+  {
+    "value": "J9",
+    "name": "J9-J742-HCIR SELMA CIMAHI MALL"
+  },
+  {
+    "value": "JA",
+    "name": "JA-J800-HCIR SERVICE CENTER"
+  },
+  {
+    "value": "JB",
+    "name": "JB-JE40-HCIR IE VIRTUAL LP PALEMBANG"
+  },
+  {
+    "value": "JC",
+    "name": "JC-JE41-HCIR IE VT GANDARIA CITY"
+  },
+  {
+    "value": "JF",
+    "name": "JF-J94C-HCIR SELMA EXHIBITION 23"
+  },
+  {
+    "value": "JG",
+    "name": "JG-J94D-HCIR SELMA EXHIBITION 24"
+  },
+  {
+    "value": "K0",
+    "name": "K0-J30O-HCIR INFORMA PACIFIC MALL TGL"
+  },
+  {
+    "value": "K1",
+    "name": "K1-J344-HCIR INFORMA MOJOKERTO"
+  },
+  {
+    "value": "K2",
+    "name": "K2-J471-HCIR IE BDG BEC"
+  },
+  {
+    "value": "K3",
+    "name": "K3-J737-HCIR SELMA GRAGE CITY MALL"
+  },
+  {
+    "value": "K4",
+    "name": "K4-J724-SELMA MALL CIPUTRA CITRARAY"
+  },
+  {
+    "value": "K5",
+    "name": "K5-J318-HCIR INFORMA KUDUS SUDIRMAN"
+  },
+  {
+    "value": "K6",
+    "name": "K6-J416-HCIR IE CENTRAL PARK 2"
+  },
+  {
+    "value": "K7",
+    "name": "K7-J726-HCIR SELMA MALL BOTANIA2"
+  },
+  {
+    "value": "K8",
+    "name": "K8-J729-HCIR SELMA PL2 ARAYA MLG"
+  },
+  {
+    "value": "K9",
+    "name": "K9-J744-HCIR SELMA ROXY JEMBER"
+  },
+  {
+    "value": "KA",
+    "name": "KA-J728-HCIR SELMA CITY POINT MLG"
+  },
+  {
+    "value": "KB",
+    "name": "KB-J474-HCIR IE QUEEN CITY SMG"
+  },
+  {
+    "value": "KC",
+    "name": "KC-J722-SELMA KINGS BDG"
+  },
+  {
+    "value": "KD",
+    "name": "KD-J711-HCIR SELMA DAAN MOGOT MAL"
+  },
+  {
+    "value": "KE",
+    "name": "KE-H725-SELMA MALL INDRAMAYU"
+  },
+  {
+    "value": "KF",
+    "name": "KF-J606-HCIR HOME GALLERIA ALAM SUTERA"
+  },
+  {
+    "value": "KG",
+    "name": "KG-J389-HCIR INFORMA SUNCITY SIDOARJO"
+  },
+  {
+    "value": "KH",
+    "name": "KH-H461-INFORMA BSB CITY SMG"
+  },
+  {
+    "value": "KI",
+    "name": "KI-H462-SUSEN SBY PAKUWON MALL"
+  },
+  {
+    "value": "KJ",
+    "name": "KJ-H465-IE THE PARK SAWANGAN"
+  },
+  {
+    "value": "KK",
+    "name": "KK-J723-SELMA MAYASARI PLAZA"
+  },
+  {
+    "value": "KL",
+    "name": "KL-J376-HCIR INFORMA FESTIVAL CITYLINK"
+  },
+  {
+    "value": "KM",
+    "name": "KM-J455-HCIR IE FESTIVAL CITYLINK"
+  },
+  {
+    "value": "KN",
+    "name": "KN-J437-HCIR IE LP PASKAL BDG"
+  },
+  {
+    "value": "KO",
+    "name": "KO-J413-HCIR IE MAG JKT"
+  },
+  {
+    "value": "KP",
+    "name": "KP-J428-HCIR IE LW PEKANBARU"
+  },
+  {
+    "value": "KQ",
+    "name": "KQ-J461-HCIR IE CILEGON M CLG"
+  },
+  {
+    "value": "KR",
+    "name": "KR-H470-IE BTC MALL BKS"
+  },
+  {
+    "value": "KS",
+    "name": "KS-J457-HCIR IE LAMPUNG"
+  },
+  {
+    "value": "KT",
+    "name": "KT-J482-HCIR IE PTC PALEMBANG"
+  },
+  {
+    "value": "KU",
+    "name": "KU-J484-HCIR IE BENCOOLEN BENGKULU"
+  },
+  {
+    "value": "KV",
+    "name": "KV-J470-HCIR IE LP JABABEKA"
+  },
+  {
+    "value": "KW",
+    "name": "KW-J714-HCIR SELMA LP PAMULANG"
+  },
+  {
+    "value": "KX",
+    "name": "KX-J425-HCIR IE LP PAMULANG"
+  },
+  {
+    "value": "KY",
+    "name": "KY-J518-HCIR SUSEN LW PEKANBARU"
+  },
+  {
+    "value": "KZ",
+    "name": "KZ-J519-HCIR SUSEN LW ALAM SUTERA"
+  },
+  {
+    "value": "L0",
+    "name": "L0-J387-HCIR INFORMA LP PERINTIS MKS"
+  },
+  {
+    "value": "L1",
+    "name": "L1-H027-WH HCI KIARA CONDONG"
+  },
+  {
+    "value": "L2",
+    "name": "L2-J462-HCIR IE LP PERINTIS MKS"
+  },
+  {
+    "value": "L3",
+    "name": "L3-H029-WH SUSEN BINTARO"
+  },
+  {
+    "value": "L4",
+    "name": "L4-H454-SUSEN MAL TAMAN ANGGREK"
+  },
+  {
+    "value": "L5",
+    "name": "L5-H028-WH HCI YOGYAKARTA"
+  },
+  {
+    "value": "L6",
+    "name": "L6-J508-HCIR SUSEN GANDARIA CITY"
+  },
+  {
+    "value": "L7",
+    "name": "L7-H030-WH HCI SEMARANG"
+  },
+  {
+    "value": "L8",
+    "name": "L8-J313-HCIR INFORMA CIMANGGIS GRAND MAL"
+  },
+  {
+    "value": "L9",
+    "name": "L9-J30J-HCIR INFORMA LP MANADO PAAL DUA"
+  },
+  {
+    "value": "LA",
+    "name": "LA-H600-HCI ESPACIO LW ALSUT"
+  },
+  {
+    "value": "LB",
+    "name": "LB-H601-ESPACIO QBIG TGR"
+  },
+  {
+    "value": "M0",
+    "name": "M0-H031-WH HCI LAMPUNG"
+  },
+  {
+    "value": "M1",
+    "name": "M1-H478-IO BOXIES BOGOR"
+  },
+  {
+    "value": "M2",
+    "name": "M2-H479-SUSEN LP PERINTIS MK"
+  },
+  {
+    "value": "M3",
+    "name": "M3-J510-HCIR SUSEN SMG QUEEN CITY"
+  },
+  {
+    "value": "M4",
+    "name": "M4-H481-SUSEN LP BALIKPAPAN"
+  },
+  {
+    "value": "M5",
+    "name": "M5-J511-HCIR THYS LP CIREBON"
+  },
+  {
+    "value": "M6",
+    "name": "M6-J435-HCIR IE PARAGON SOLO"
+  },
+  {
+    "value": "M7",
+    "name": "M7-J472-HCIR IE GRAND JAVA SMG"
+  },
+  {
+    "value": "M8",
+    "name": "M8-J429-HCIR IE MOJOKERTO"
+  },
+  {
+    "value": "M9",
+    "name": "M9-J483-HCIR IE KEDIRI MALL"
+  },
+  {
+    "value": "N0",
+    "name": "N0-J468-HCIR IE ICON GRESIK"
+  },
+  {
+    "value": "N1",
+    "name": "N1-J453-HCIR IE DUTA MALL BJM"
+  },
+  {
+    "value": "N2",
+    "name": "N2-J469-HCIR IE MALUKU CITY MALL"
+  },
+  {
+    "value": "N3",
+    "name": "N3-J426-HCIR IE LIPPO KEMANG JKT"
+  },
+  {
+    "value": "N4",
+    "name": "N4-H494-IE PIM PALEMBANG"
+  },
+  {
+    "value": "N5",
+    "name": "N5-J488-HCIR IE LENMARC SBY"
+  },
+  {
+    "value": "N6",
+    "name": "N6-J423-HCIR IE EAST COAST SBY"
+  },
+  {
+    "value": "N7",
+    "name": "N7-J442-HCIR IE BIG MALL SMD"
+  },
+  {
+    "value": "N8",
+    "name": "N8-H498-IE SLEMAN YOGYA"
+  },
+  {
+    "value": "N9",
+    "name": "N9-J456-HCIR IE GORONTALO"
+  },
+  {
+    "value": "O0",
+    "name": "O0-J433-HCIR IE S PARMAN MDN"
+  },
+  {
+    "value": "O1",
+    "name": "O1-J459-HCIR IE CITRA RAYA TGR"
+  },
+  {
+    "value": "O2",
+    "name": "O2-J439-HCIR IE LP BALIKPAPAN"
+  },
+  {
+    "value": "O3",
+    "name": "O3-J485-HCIR IE PACIFIC MALL TGL"
+  },
+  {
+    "value": "O4",
+    "name": "O4-J440-HCIR IE LP PURWOKERTO"
+  },
+  {
+    "value": "O5",
+    "name": "O5-J473-HCIR IE DELI PARK MEDAN"
+  },
+  {
+    "value": "O6",
+    "name": "O6-J486-HCIR IE MIKO MALL BDG"
+  },
+  {
+    "value": "O7",
+    "name": "O7-J424-HCIR IE ROYAL SBY"
+  },
+  {
+    "value": "O8",
+    "name": "O8-J427-HCIR IE JUANDA MEDAN"
+  },
+  {
+    "value": "O9",
+    "name": "O9-J438-HCIR IE HARTONO YOGYA"
+  },
+  {
+    "value": "P0",
+    "name": "P0-J467-HCIR IE LP KHI BEKASI"
+  },
+  {
+    "value": "P1",
+    "name": "P1-J458-HCIR IE METRO INDAH BDG"
+  },
+  {
+    "value": "P2",
+    "name": "P2-J441-IE DAMAR PADANG"
+  },
+  {
+    "value": "P3",
+    "name": "P3-J475-HCIR IE SULTAN AGUNG LMP"
+  },
+  {
+    "value": "P4",
+    "name": "P4-H483-SUSEN IBCC"
+  },
+  {
+    "value": "P5",
+    "name": "P5-H602-ESPACIO IBCC"
+  },
+  {
+    "value": "P6",
+    "name": "P6-J463-HCIR IE CITY POINT MLG"
+  },
+  {
+    "value": "P7",
+    "name": "P7-J608-HCIR IS CITY POINT MLG"
+  },
+  {
+    "value": "P8",
+    "name": "P8-J515-HCIR THYS LP LATANETE MKS"
+  },
+  {
+    "value": "P9",
+    "name": "P9-H515-IO ONE BELPARK"
+  },
+  {
+    "value": "PA",
+    "name": "PA-H518-IS FESTIVAL CITYLINK"
+  },
+  {
+    "value": "PB",
+    "name": "PB-J478-HCIR IE ROXY JEMBER"
+  },
+  {
+    "value": "PC",
+    "name": "PC-J477-HCIR IE JOGJA CITY MALL"
+  },
+  {
+    "value": "PD",
+    "name": "PD-J516-HCIR THYS LP JABABEKA"
+  },
+  {
+    "value": "PE",
+    "name": "PE-J512-HCIR THYS LP PASKAL BDG"
+  },
+  {
+    "value": "PF",
+    "name": "PF-J609-HCIR IS JOGJA CITY MAL"
+  },
+  {
+    "value": "PG",
+    "name": "PG-J320-HCIR INFORMA LP MEDAN"
+  },
+  {
+    "value": "PI",
+    "name": "PI-J405-HCIR IE BASSURA MALL"
+  },
+  {
+    "value": "PJ",
+    "name": "PJ-H033-WH HCI KEDIRI"
+  },
+  {
+    "value": "PK",
+    "name": "PK-J408-HCIR IE DEPOK TOWN SQ"
+  },
+  {
+    "value": "PL",
+    "name": "PL-H034-WH HCI HUB CIREBON"
+  },
+  {
+    "value": "PM",
+    "name": "PM-H036-HCI WH KENDARI"
+  },
+  {
+    "value": "PN",
+    "name": "PN-H037-WH LP BANJARMASIN"
+  },
+  {
+    "value": "PO",
+    "name": "PO-H038-WH RYACUDU LAMPUNG"
+  },
+  {
+    "value": "PP",
+    "name": "PP-H035-WH HCI PONTIANAK"
+  },
+  {
+    "value": "PR",
+    "name": "PR-J412-HCIR IE LP MEDAN"
+  },
+  {
+    "value": "PS",
+    "name": "PS-H039-WH HCI CIKARANG GLC 7"
+  },
+  {
+    "value": "PT",
+    "name": "PT-H040-WH HCI PANGKAL PINANG"
+  },
+  {
+    "value": "PU",
+    "name": "PU-H041-WH HCI ABEPURA JAYAPURA"
+  },
+  {
+    "value": "PV",
+    "name": "PV-H042-WH HCI TARAKAN"
+  },
+  {
+    "value": "PW",
+    "name": "PW-H043-WH HCI TERNATE"
+  },
+  {
+    "value": "V0",
+    "name": "V0-H969-HCI SUSEN EXHIBITION 10"
+  },
+  {
+    "value": "V1",
+    "name": "V1-J932-HCIR HCI SUSEN EXHIBITION 1"
+  },
+  {
+    "value": "V2",
+    "name": "V2-J931-HCIR SUSEN EXHIBITION 2"
+  },
+  {
+    "value": "V3",
+    "name": "V3-J934-HCIR SUSEN EXHIBITION 5"
+  },
+  {
+    "value": "V4",
+    "name": "V4-J933-ST HCIR THYS EXHIBITION 4"
+  },
+  {
+    "value": "V5",
+    "name": "V5-J930-HCIR HCI SUSEN EXHIBITION 5"
+  },
+  {
+    "value": "V6",
+    "name": "V6-J935-ST HCIR THYS EXHIBITION 6"
+  },
+  {
+    "value": "V7",
+    "name": "V7-H966-HCI SUSEN EXHIBITION 7"
+  },
+  {
+    "value": "V8",
+    "name": "V8-H967-HCI SUSEN EXHIBITION 8"
+  },
+  {
+    "value": "V9",
+    "name": "V9-H968-HCI SUSEN EXHIBITION 9"
+  },
+  {
+    "value": "VA",
+    "name": "VA-H96A-HCI SUSEN EXHIBITION 11"
+  },
+  {
+    "value": "VB",
+    "name": "VB-H96B-HCI SUSEN EXHIBITION 12"
+  },
+  {
+    "value": "VC",
+    "name": "VC-H96C-HCI SUSEN EXHIBITION 13"
+  },
+  {
+    "value": "VD",
+    "name": "VD-H96D-HCI SUSEN EXHIBITION 14"
+  },
+  {
+    "value": "VE",
+    "name": "VE-H96E-HCI SUSEN EXHIBITION 15"
+  },
+  {
+    "value": "VF",
+    "name": "VF-H96F-HCI SUSEN EXHIBITION 16"
+  },
+  {
+    "value": "VG",
+    "name": "VG-H96G-HCI SUSEN EXHIBITION 17"
+  },
+  {
+    "value": "VH",
+    "name": "VH-H96H-HCI SUSEN EXHIBITION 18"
+  },
+  {
+    "value": "VI",
+    "name": "VI-H96I-HCI SUSEN EXHIBITION 19"
+  },
+  {
+    "value": "VJ",
+    "name": "VJ-H96J-HCI SUSEN EXHIBITION 20"
+  },
+  {
+    "value": "VK",
+    "name": "VK-J911-HCIR ROLKA EXHIBITION 1"
+  },
+  {
+    "value": "VL",
+    "name": "VL-J912-HCIR ROLKA EXHIBITION 2"
+  },
+  {
+    "value": "X0",
+    "name": "X0-H970-SELMA EXHIBITION 10"
+  },
+  {
+    "value": "X1",
+    "name": "X1-H979-SELMA EXHIBITION 1"
+  },
+  {
+    "value": "X2",
+    "name": "X2-H978-SELMA EXHIBITION 2"
+  },
+  {
+    "value": "X3",
+    "name": "X3-H977-SELMA EXHIBITION 3"
+  },
+  {
+    "value": "X4",
+    "name": "X4-H976-SELMA EXHIBITION 4"
+  },
+  {
+    "value": "X5",
+    "name": "X5-H975-SELMA EXHIBITION 5"
+  },
+  {
+    "value": "X6",
+    "name": "X6-H974-SELMA EXHIBITION 6"
+  },
+  {
+    "value": "X7",
+    "name": "X7-H973-SELMA EXHIBITION 7"
+  },
+  {
+    "value": "X8",
+    "name": "X8-H972-SELMA EXHIBITION 8"
+  },
+  {
+    "value": "X9",
+    "name": "X9-H971-SELMA EXHIBITION 9"
+  },
+  {
+    "value": "XA",
+    "name": "XA-H97A-SELMA EXHIBITION 11"
+  },
+  {
+    "value": "XB",
+    "name": "XB-H97B-SELMA EXHIBITION 12"
+  },
+  {
+    "value": "XC",
+    "name": "XC-H97C-SELMA EXHIBITION 13"
+  },
+  {
+    "value": "XD",
+    "name": "XD-H97D-SELMA EXHIBITION 14"
+  },
+  {
+    "value": "XE",
+    "name": "XE-H97E-SELMA EXHIBITION 15"
+  },
+  {
+    "value": "XF",
+    "name": "XF-H97F-SELMA EXHIBITION 16"
+  },
+  {
+    "value": "XG",
+    "name": "XG-H97G-SELMA EXHIBITION 17"
+  },
+  {
+    "value": "XH",
+    "name": "XH-H97H-SELMA EXHIBITION 18"
+  },
+  {
+    "value": "XI",
+    "name": "XI-H97I-SELMA EXHIBITION 19"
+  },
+  {
+    "value": "Y4",
+    "name": "Y4-H980-ST HCI EXHIBITION 20"
+  },
+  {
+    "value": "Y5",
+    "name": "Y5-H981-ST HCI EXHIBITION 19"
+  },
+  {
+    "value": "Y6",
+    "name": "Y6-H982-ST HCI EXHIBITION 18"
+  },
+  {
+    "value": "Y7",
+    "name": "Y7-H983-ST HCI EXHIBITION 17"
+  },
+  {
+    "value": "Y8",
+    "name": "Y8-H984-ST HCI EXHIBITION 16"
+  },
+  {
+    "value": "Y9",
+    "name": "Y9-H985-ST HCI EXHIBITION 15"
+  },
+  {
+    "value": "YK",
+    "name": "YK-J31H-HCIR INFORMA LP BATAM"
+  },
+  {
+    "value": "YL",
+    "name": "YL-H99L-HCI EXHIBITION 32"
+  },
+  {
+    "value": "YM",
+    "name": "YM-H99M-HCI EXHIBITION 33"
+  },
+  {
+    "value": "YN",
+    "name": "YN-H99N-HCI EXHIBITION 34"
+  },
+  {
+    "value": "YO",
+    "name": "YO-H99O-HCI EXHIBITION 35"
+  },
+  {
+    "value": "YP",
+    "name": "YP-H99P-HCI EXHIBITION 36"
+  },
+  {
+    "value": "YQ",
+    "name": "YQ-H99Q-HCI EXHIBITION 37"
+  },
+  {
+    "value": "YR",
+    "name": "YR-H99R-HCI EXHIBITION 38"
+  },
+  {
+    "value": "Z0",
+    "name": "Z0-H986-ST HCI EXHIBITION 14"
+  },
+  {
+    "value": "Z1",
+    "name": "Z1-H987-ST HCI EXHIBITION 13"
+  },
+  {
+    "value": "Z2",
+    "name": "Z2-H988-ST HCI EXHIBITION 12"
+  },
+  {
+    "value": "Z3",
+    "name": "Z3-H989-ST HCI EXHIBITION 11"
+  },
+  {
+    "value": "Z4",
+    "name": "Z4-H990-ST INFORMA H990"
+  },
+  {
+    "value": "Z5",
+    "name": "Z5-H991-ST HCI EXHIBITION 9"
+  },
+  {
+    "value": "Z6",
+    "name": "Z6-H992-ST INFORMA H992"
+  },
+  {
+    "value": "Z7",
+    "name": "Z7-H993-ST INFORMA H993"
+  },
+  {
+    "value": "Z8",
+    "name": "Z8-H994-ST INFORMA H994"
+  },
+  {
+    "value": "ZA",
+    "name": "ZA-HE01-INFORMA WEBSITE"
+  },
+  {
+    "value": "ZB",
+    "name": "ZB-HE02-INFORMA ECATALOG"
+  },
+  {
+    "value": "ZC",
+    "name": "ZC-HE03-INFORMA APP MONTHLY PROMO"
+  },
+  {
+    "value": "ZD",
+    "name": "ZD-HE04-INFORMA APP CATALOG"
+  },
+  {
+    "value": "ZE",
+    "name": "ZE-HE05-INFORMA APP ADDITIONAL PROM"
+  },
+  {
+    "value": "ZF",
+    "name": "ZF-H99A-HCI EXHIBITION 21"
+  },
+  {
+    "value": "ZG",
+    "name": "ZG-H99B-HCI EXHIBITION 22"
+  },
+  {
+    "value": "ZH",
+    "name": "ZH-H99C-HCI EXHIBITION 23"
+  },
+  {
+    "value": "ZI",
+    "name": "ZI-H99D-HCI EXHIBITION 24"
+  },
+  {
+    "value": "ZJ",
+    "name": "ZJ-H99E-HCI EXHIBITION 25"
+  },
+  {
+    "value": "ZK",
+    "name": "ZK-H99F-HCI EXHIBITION 26"
+  },
+  {
+    "value": "ZL",
+    "name": "ZL-H99G-HCI EXHIBITION 27"
+  },
+  {
+    "value": "ZM",
+    "name": "ZM-H99H-HCI EXHIBITION 28"
+  },
+  {
+    "value": "ZN",
+    "name": "ZN-H99I-HCI EXHIBITION 29"
+  },
+  {
+    "value": "ZO",
+    "name": "ZO-H99J-HCI EXHIBITION 30"
+  },
+  {
+    "value": "ZP",
+    "name": "ZP-H99K-HCI EXHIBITION 31"
+  },
+  {
+    "value": "ZQ",
+    "name": "ZQ-J40E-HCIR IE LP BATAM"
+  },
+  {
+    "value": "ZR",
+    "name": "ZR-J40M-HCIR IE ACEH"
+  },
+  {
+    "value": "ZS",
+    "name": "ZS-J40Q-HCIR IE METRO LAMPUNG"
+  },
+  {
+    "value": "ZZ",
+    "name": "ZZ-H739-SELMA CITIMALL PRABUMULIH"
+  }
+]

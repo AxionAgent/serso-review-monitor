@@ -19,6 +19,7 @@ import {
   overallRating,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { resolveStoreFromTicket, storeLabel } from "./store";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -184,6 +185,8 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
     qrName: qr?.name ?? "Direct",
     teamName: team?.name ?? "Unassigned",
     overall: overallRating(review),
+    storeCode: resolveStoreFromTicket(review.receiptNo).code,
+    storeName: storeLabel(review.receiptNo),
   }));
 
   return {
@@ -210,7 +213,7 @@ export async function getReviewDetail(user: ScopeUser, id: number) {
   const row = rows[0];
   if (!row) return undefined;
   const alerts = await db.select().from(reviewAlerts).where(eq(reviewAlerts.reviewId, id)).orderBy(desc(reviewAlerts.createdAt));
-  return { ...row.review, branch: row.branch, qr: row.qr, team: row.team, overall: overallRating(row.review), alerts };
+  return { ...row.review, branch: row.branch, qr: row.qr, team: row.team, overall: overallRating(row.review), storeCode: resolveStoreFromTicket(row.review.receiptNo).code, storeName: storeLabel(row.review.receiptNo), alerts };
 }
 
 export async function createAuditLog(input: InsertAuditLog) {
@@ -419,7 +422,7 @@ export async function dashboardData(user: ScopeUser, input: { branchId?: number;
     branchAnalytics: branchesForUser.map((item) => ({ ...aggregate([item])[0], code: item.code })),
     teamAnalytics: teamsForUser.map((item) => ({ ...aggregate([item])[0], branchId: item.branchId })),
     qrAnalytics: qrForUser.map((item) => ({ ...aggregate([item])[0], code: item.code, branchId: item.branchId })),
-    recentReviews: rows.slice(0, 7).map(({ review, branch, qr }) => ({ ...review, branchName: branch?.name ?? "Unassigned", qrName: qr?.name ?? "Direct", overall: overallRating(review) })),
+    recentReviews: rows.slice(0, 7).map(({ review, branch, qr }) => ({ ...review, branchName: branch?.name ?? "Unassigned", qrName: qr?.name ?? "Direct", overall: overallRating(review), storeCode: resolveStoreFromTicket(review.receiptNo).code, storeName: storeLabel(review.receiptNo) })),
     alerts: alertRows.slice(0, 8),
     alertSummary: { critical: alertRows.filter((a) => a.status === "open" && a.severity === "critical").length, attention: alertRows.filter((a) => a.status === "open" && a.severity === "attention").length, resolved: alertRows.filter((a) => a.status === "resolved").length },
   };
@@ -440,6 +443,8 @@ export async function exportReviews(user: ScopeUser, input: Parameters<typeof fi
     overall: overallRating(review),
     comment: review.comment ?? "",
     status: review.status,
+    storeCode: resolveStoreFromTicket(review.receiptNo).code,
+    storeName: storeLabel(review.receiptNo),
   }));
 }
 

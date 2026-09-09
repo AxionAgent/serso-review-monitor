@@ -121,8 +121,8 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
 
         <div className="grid grid-cols-3 gap-3 rounded-2xl bg-slate-50 p-4 text-xs">
           <div>
-            <span className="text-slate-400 font-medium">Branch</span>
-            <p className="font-bold text-slate-800 mt-0.5">{detail.branch?.name ?? "N/A"}</p>
+            <span className="text-slate-400 font-medium">Store</span>
+            <p className="font-bold text-slate-800 mt-0.5">{detail.storeName ?? detail.branch?.name ?? "N/A"}</p>
           </div>
           <div>
             <span className="text-slate-400 font-medium">Tim Instalasi</span>
@@ -233,7 +233,7 @@ function ReviewsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"new" | "resolved" | "archived" | undefined>();
   const [branchId, setBranchId] = useState<number | undefined>();
-  const [sortKey, setSortKey] = useState<"date" | "rating" | "status">("date");
+  const [sortKey, setSortKey] = useState<"date" | "store" | "rating" | "status">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -251,14 +251,15 @@ function ReviewsPage() {
   const sortedReviews = [...reviews].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
     if (sortKey === "date") return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+    if (sortKey === "store") return ((a.storeName ?? a.branchName ?? "")).localeCompare((b.storeName ?? b.branchName ?? "")) * dir;
     if (sortKey === "rating") return (a.overall - b.overall) * dir;
     return ((statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9)) * dir;
   });
-  const toggleSort = (key: "date" | "rating" | "status") => {
+  const toggleSort = (key: "date" | "store" | "rating" | "status") => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir(key === "date" ? "desc" : "asc"); }
   };
-  const SortIcon = ({ col }: { col: "date" | "rating" | "status" }) => <span className="ml-1 inline-block text-[9px]">{sortKey === col ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>;
+  const SortIcon = ({ col }: { col: "date" | "store" | "rating" | "status" }) => <span className="ml-1 inline-block text-[9px]">{sortKey === col ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>;
 
   const { data: branches } = trpc.admin.branches.useQuery();
   const { data: currentUser } = trpc.auth.me.useQuery();
@@ -289,8 +290,8 @@ function ReviewsPage() {
       const data = rows.map((row) => ({
         "Tanggal": label(row.date).slice(0, 10),
         "No. Receipt": label(row.receiptNo),
-        "Branch": label(row.branchName),
-        "Kode Branch": label(row.branchCode),
+        "Store": label(row.storeName ?? row.branchName),
+        "Store Code": label(row.storeCode ?? row.branchCode),
         "QR": label(row.qrName),
         "Tim": label(row.teamName),
         "Pemasangan": row.installationRating,
@@ -322,7 +323,7 @@ function ReviewsPage() {
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search receipt or comment" className="h-10 w-full text-sm outline-none" />
         </div>
         <select value={branchId ?? ""} onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : undefined); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
-          <option value="">All branches</option>
+          <option value="">All stores</option>
           {branches?.map((branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}
         </select>
         <select value={status ?? ""} onChange={(e) => { setStatus((e.target.value || undefined) as typeof status); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
@@ -340,7 +341,7 @@ function ReviewsPage() {
                 {canDelete ? <th className="w-12 px-5 py-4"><input type="checkbox" checked={reviews.length > 0 && selected.length === reviews.length} onChange={(e) => setSelected(e.target.checked ? reviews.map((review) => review.id) : [])} /></th> : null}
                 <th className="px-5 py-4"><button onClick={() => toggleSort("date")} className="inline-flex items-center uppercase tracking-wider hover:text-slate-600">Date<SortIcon col="date" /></button></th>
                 <th className="px-5 py-4">Receipt</th>
-                <th className="px-5 py-4">Branch</th>
+                <th className="px-5 py-4"><button onClick={() => toggleSort("store")} className="inline-flex items-center uppercase tracking-wider hover:text-slate-600">Store<SortIcon col="store" /></button></th>
                 <th className="px-5 py-4"><button onClick={() => toggleSort("rating")} className="inline-flex items-center uppercase tracking-wider hover:text-slate-600">Rating<SortIcon col="rating" /></button></th>
                 <th className="px-5 py-4">Comment</th>
                 <th className="px-5 py-4"><button onClick={() => toggleSort("status")} className="inline-flex items-center uppercase tracking-wider hover:text-slate-600">Status<SortIcon col="status" /></button></th>
@@ -353,7 +354,7 @@ function ReviewsPage() {
                   {canDelete ? <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selected.includes(review.id)} onChange={(e) => setSelected((current) => e.target.checked ? [...current, review.id] : current.filter((id) => id !== review.id))} /></td> : null}
                   <td className="whitespace-nowrap px-5 py-4 text-xs text-slate-500">{moneyDate(review.createdAt)}</td>
                   <td className="px-5 py-4 font-semibold text-slate-800">{review.receiptNo}</td>
-                  <td className="px-5 py-4"><p className="font-medium text-slate-700">{review.branchName}</p><p className="text-xs text-slate-400">{review.qrName}</p></td>
+                  <td className="px-5 py-4"><p className="font-medium text-slate-700">{review.storeName ?? review.branchName ?? "Unassigned"}</p><p className="text-xs text-slate-400">{review.storeCode ? `${review.storeCode} · ${review.qrName}` : review.qrName}</p></td>
                   <td className="px-5 py-4"><p className="font-bold text-slate-800">{review.overall.toFixed(2)}</p><p className="text-[11px] tracking-tight text-amber-400">{stars(review.overall)}</p></td>
                   <td className="max-w-[260px] truncate px-5 py-4 text-slate-500">{review.comment || "—"}</td>
                   <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><StatusBadge status={review.status} /></td>
