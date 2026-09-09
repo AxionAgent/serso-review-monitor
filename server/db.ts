@@ -174,7 +174,8 @@ function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: {
 }
 
 export async function listReviews(user: ScopeUser, input: Parameters<typeof filterRows>[1] & { page?: number; pageSize?: number } = {}) {
-  const allRows = filterRows(await getJoinedReviews(user), input);
+  const joined = await getJoinedReviews(user);
+  const allRows = filterRows(joined, input);
   const total = allRows.length;
   const page = Math.max(1, input.page ?? 1);
   const pageSize = Math.max(1, Math.min(100, input.pageSize ?? 10));
@@ -193,11 +194,13 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
     storeName: storeLabel(review.receiptNo),
   }));
 
-  // store options: unik dari SEMUA review (sebelum filter store) — buat dropdown dinamis
+  // store options: unik dari SEMUA review (SEBELUM filter) — biar dropdown tetap
+  // lengkap walau sedang memfilter store. Misal filter "Selma" sudah aktif,
+  // dropdown tetap berisi Selma, Pontianak, dll dan bisa pindah ke store lain.
   const storeMap = new Map<string, string>();
-  for (const { review } of allRows) {
+  for (const { review } of joined) {
     const { code, name } = resolveStoreFromTicket(review.receiptNo);
-    if (code && !storeMap.has(code)) storeMap.set(code, name ?? code);
+    if (code && !storeMap.has(code)) storeMap.set(code, storeLabel(review.receiptNo) ?? code);
   }
   const storeOptions = Array.from(storeMap.entries())
     .map(([code, name]) => ({ code, name }))
@@ -353,9 +356,9 @@ export async function createReview(input: InsertReview, threshold: number) {
 export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "reviewed" | "resolved" | "archived", userId?: number, note?: string | null) {
   const detail = await getReviewDetail(user, id);
   if (!detail) throw new Error("Review not found");
-  // Rule: status resolved ↛ new (irreversible). Boleh resolved→archived, archived→new/resolved.
-  if (detail.status === "resolved" && status === "new") {
-    throw new Error("Review yang sudah Resolved tidak dapat dikembalikan ke status New.");
+  // Rule: status resolved/archived ↛ new (irreversible). Boleh resolved→archived.
+  if ((detail.status === "resolved" || detail.status === "archived") && status === "new") {
+    throw new Error(`Review yang sudah ${detail.status === "resolved" ? "Resolved" : "Archived"} tidak dapat dikembalikan ke status New.`);
   }
   const db = await requireDb();
   // note: disimpan saat resolve (opsional); clear saat pindah ke new/archived biar tidak nyangkut

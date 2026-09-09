@@ -22,7 +22,7 @@ describe("resolveStoreFromTicket", () => {
     expect(resolveStoreFromTicket("u5a.3.20260909.1")).toEqual({ code: "5A", name: expect.any(String) });
   });
 
-  it("unknown code falls back to code-only label", () => {
-    expect(storeLabel("U9Z.3.20260909.1")).toBe("9Z");
+  it("unknown code shows Unknown label", () => {
+    expect(storeLabel("U9Z.3.20260909.1")).toBe("Unknown");
   });
 });

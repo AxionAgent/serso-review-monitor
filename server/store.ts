@@ -46,8 +46,10 @@ export function resolveStoreFromTicket(raw?: string | null): { code: string | nu
   return { code, name };
 }
 
-/** Store display name — fallback kalau tidak ketemu di katalog. */
+/** Store display name — "Unknown" kalau kode tak dikenal di katalog. */
 export function storeLabel(raw?: string | null): string | null {
   const { code, name } = resolveStoreFromTicket(raw);
+  // Kode berhasil di-parse tapi tidak ada di katalog store.json -> tampilkan "Unknown"
+  if (code && !name) return "Unknown";
   return name ?? code;
 }

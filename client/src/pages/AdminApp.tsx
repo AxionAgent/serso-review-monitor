@@ -95,6 +95,8 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
       { onSuccess: () => onStatusChange() }
     );
   };
+  // Transisi status one-way: new → resolved → archived. Status selain "new" tak bisa balik ke "new".
+  const isLocked = (st: string) => detail.status !== "new" && st === "new";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
@@ -193,13 +195,15 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
             {(["new", "resolved", "archived"] as const).map((st) => (
               <button
                 key={st}
-                disabled={detail.status === st || update.isPending || (detail.status === "resolved" && st === "new")}
-                title={detail.status === "resolved" && st === "new" ? "Review yang sudah Resolved tidak dapat dikembalikan ke New" : undefined}
+                disabled={detail.status === st || update.isPending || (detail.status !== "new" && st === "new")}
+                title={detail.status !== "new" && st === "new" ? "Review yang sudah diproses (Resolved/Archived) tidak dapat dikembalikan ke New" : undefined}
                 onClick={() => handleStatus(st)}
                 className={`rounded-xl px-3 py-1.5 text-xs font-bold capitalize transition ${
                   detail.status === st
                     ? "bg-[#2f6fed] text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : isLocked(st)
+                      ? "cursor-not-allowed bg-slate-200 text-slate-400 line-through decoration-slate-300"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
                 {st}
@@ -354,7 +358,7 @@ function ReviewsPage() {
                         <Eye className="h-3.5 w-3.5" /> Detail
                       </button>
                       <select value={review.status} onChange={(e) => update.mutate({ id: review.id, status: e.target.value as "new" | "resolved" | "archived" }, { onSuccess: () => utils.admin.reviews.invalidate() })} className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600">
-                        <option value="new" disabled={review.status === "resolved"}>New</option>
+                        <option value="new" disabled={review.status !== "new"}>New</option>
                         <option value="resolved">Resolved</option>
                         <option value="archived">Archived</option>
                       </select>
