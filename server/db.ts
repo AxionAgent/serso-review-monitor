@@ -353,6 +353,10 @@ export async function createReview(input: InsertReview, threshold: number) {
 export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "reviewed" | "resolved" | "archived", userId?: number, note?: string | null) {
   const detail = await getReviewDetail(user, id);
   if (!detail) throw new Error("Review not found");
+  // Rule: status resolved ↛ new (irreversible). Boleh resolved→archived, archived→new/resolved.
+  if (detail.status === "resolved" && status === "new") {
+    throw new Error("Review yang sudah Resolved tidak dapat dikembalikan ke status New.");
+  }
   const db = await requireDb();
   // note: disimpan saat resolve (opsional); clear saat pindah ke new/archived biar tidak nyangkut
   const setFields: Record<string, unknown> = { status };

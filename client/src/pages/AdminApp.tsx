@@ -193,7 +193,8 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
             {(["new", "resolved", "archived"] as const).map((st) => (
               <button
                 key={st}
-                disabled={detail.status === st || update.isPending}
+                disabled={detail.status === st || update.isPending || (detail.status === "resolved" && st === "new")}
+                title={detail.status === "resolved" && st === "new" ? "Review yang sudah Resolved tidak dapat dikembalikan ke New" : undefined}
                 onClick={() => handleStatus(st)}
                 className={`rounded-xl px-3 py-1.5 text-xs font-bold capitalize transition ${
                   detail.status === st
@@ -353,7 +354,7 @@ function ReviewsPage() {
                         <Eye className="h-3.5 w-3.5" /> Detail
                       </button>
                       <select value={review.status} onChange={(e) => update.mutate({ id: review.id, status: e.target.value as "new" | "resolved" | "archived" }, { onSuccess: () => utils.admin.reviews.invalidate() })} className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600">
-                        <option value="new">New</option>
+                        <option value="new" disabled={review.status === "resolved"}>New</option>
                         <option value="resolved">Resolved</option>
                         <option value="archived">Archived</option>
                       </select>
