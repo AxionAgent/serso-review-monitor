@@ -82,6 +82,7 @@ export const reviews = mysqlTable(
     groomingRating: int("groomingRating").notNull(),
     serviceRating: int("serviceRating").notNull(),
     comment: text("comment"),
+    note: text("note"),
     status: mysqlEnum("status", ["new", "reviewed", "resolved", "archived"]).default("new").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

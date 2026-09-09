@@ -36,6 +36,13 @@
       "when": 1788855896445,
       "tag": "0004_reviews_branch_receipt_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1788934467769,
+      "tag": "0005_add_review_note",
+      "breakpoints": true
     }
   ]
 }

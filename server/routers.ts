@@ -48,6 +48,7 @@ const dateFilters = z.object({
   qrCodeId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
   status: statusSchema.optional(),
+  storeCode: z.string().max(16).optional(),
   search: z.string().max(120).optional(),
   rating: z.enum(["low", "high"]).optional(),
   startDate: z.string().optional(),
@@ -179,7 +180,7 @@ export const appRouter = router({
     deleteQRCode: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteQRCode(input.id, ctx.user.id)),
     reviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => listReviews(ctx.user, input)),
     review: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input, ctx }) => getReviewDetail(ctx.user, input.id)),
-    updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id); }),
+    updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema, note: z.string().max(2000).nullable().optional() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id, input.note ?? null); }),
     assignReview: protectedProcedure.input(z.object({ id: z.number().int().positive(), branchId: z.number().int().positive(), teamId: z.number().int().positive().nullable().optional() })).mutation(async ({ input, ctx }) => {
       assertWritable(ctx.user);
       assertBranchScope(ctx.user, input.branchId);

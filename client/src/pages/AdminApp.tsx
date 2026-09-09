@@ -71,22 +71,12 @@ function OverviewPage() {
 function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: number; onClose: () => void; onStatusChange: () => void }) {
   const { data: detail, isLoading } = trpc.admin.review.useQuery({ id: reviewId });
   const update = trpc.admin.updateReviewStatus.useMutation();
-  const assign = trpc.admin.assignReview.useMutation();
-  const { data: branches } = trpc.admin.branches.useQuery();
-  const { data: teams } = trpc.admin.teams.useQuery();
-  const [assignBranchId, setAssignBranchId] = useState<number | undefined>();
-  const [assignTeamId, setAssignTeamId] = useState<number | undefined>();
+  const [resolveNote, setResolveNote] = useState("");
 
   useEffect(() => {
-    if (detail?.branchId) setAssignBranchId(detail.branchId);
-    if (detail?.teamId) setAssignTeamId(detail.teamId);
-  }, [detail?.branchId, detail?.teamId]);
-
-  const assignableTeams = teams?.filter((team) => team.branchId === assignBranchId) ?? [];
-  const saveAssign = () => {
-    if (!assignBranchId) return;
-    assign.mutate({ id: reviewId, branchId: assignBranchId, teamId: assignTeamId }, { onSuccess: () => onStatusChange() });
-  };
+    // Isi textarea dengan note tersimpan kalau review sudah pernah di-resolve
+    if (detail?.note) setResolveNote(detail.note);
+  }, [detail?.note]);
 
   if (isLoading || !detail) {
     return (
@@ -100,7 +90,10 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
   }
 
   const handleStatus = (status: "new" | "resolved" | "archived") => {
-    update.mutate({ id: detail.id, status }, { onSuccess: () => onStatusChange() });
+    update.mutate(
+      { id: detail.id, status, note: status === "resolved" ? resolveNote || null : null },
+      { onSuccess: () => onStatusChange() }
+    );
   };
 
   return (
@@ -183,26 +176,15 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
         ) : null}
 
         <div className="rounded-2xl border border-[#dbe7ff] bg-[#f6f9ff] p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#2f6fed]">Assign Branch</h4>
-            <button onClick={saveAssign} disabled={!assignBranchId || assign.isPending} className="rounded-lg bg-[#2f6fed] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40">
-              {assign.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Simpan"}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block space-y-1"><span className="text-[11px] font-semibold text-slate-500">Branch</span>
-              <select value={assignBranchId ?? ""} onChange={(e) => { setAssignBranchId(e.target.value ? Number(e.target.value) : undefined); setAssignTeamId(undefined); }} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700">
-                <option value="">— Pilih Branch —</option>
-                {branches?.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-              </select>
-            </label>
-            <label className="block space-y-1"><span className="text-[11px] font-semibold text-slate-500">Tim (opsional)</span>
-              <select value={assignTeamId ?? ""} onChange={(e) => setAssignTeamId(e.target.value ? Number(e.target.value) : undefined)} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700">
-                <option value="">— Tanpa Tim —</option>
-                {assignableTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-              </select>
-            </label>
-          </div>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-[#2f6fed] mb-2">Catatan Resolve <span className="font-medium normal-case text-slate-400">(opsional)</span></h4>
+          <textarea
+            value={resolveNote}
+            onChange={(e) => setResolveNote(e.target.value)}
+            rows={3}
+            placeholder="Tulis catatan tindak lanjut di sini… (dikirim saat status diubah ke Resolved)"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-[#2f6fed] resize-y"
+          />
+          {detail.note ? <p className="mt-2 text-[11px] text-slate-400">Note tersimpan: <span className="text-slate-600">{detail.note}</span></p> : null}
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
@@ -232,7 +214,7 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
 function ReviewsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"new" | "resolved" | "archived" | undefined>();
-  const [branchId, setBranchId] = useState<number | undefined>();
+  const [storeCode, setStoreCode] = useState<string | undefined>();
   const [sortKey, setSortKey] = useState<"date" | "store" | "rating" | "status">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
@@ -241,11 +223,18 @@ function ReviewsPage() {
   const [detailReviewId, setDetailReviewId] = useState<number | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"xlsx" | "ods" | "csv">("xlsx");
+  // debounce search — biar tiap ketik tidak langsung refetch & unmount (masalah keyboard Android)
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const { data: reviewsResponse, isLoading } = trpc.admin.reviews.useQuery({ search: search || undefined, status, branchId, page, pageSize });
+  const { data: reviewsResponse, isLoading } = trpc.admin.reviews.useQuery({ search: debouncedSearch || undefined, status, storeCode, page, pageSize });
   const reviews = reviewsResponse?.items ?? [];
   const total = reviewsResponse?.total ?? 0;
   const totalPages = reviewsResponse?.totalPages ?? 1;
+  const storeOptions = reviewsResponse?.storeOptions ?? [];
 
   const statusRank: Record<string, number> = { new: 0, resolved: 1, archived: 2 };
   const sortedReviews = [...reviews].sort((a, b) => {
@@ -261,13 +250,12 @@ function ReviewsPage() {
   };
   const SortIcon = ({ col }: { col: "date" | "store" | "rating" | "status" }) => <span className="ml-1 inline-block text-[9px]">{sortKey === col ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>;
 
-  const { data: branches } = trpc.admin.branches.useQuery();
   const { data: currentUser } = trpc.auth.me.useQuery();
   const update = trpc.admin.updateReviewStatus.useMutation();
   const deleteOne = trpc.admin.deleteReview.useMutation();
   const deleteAll = trpc.admin.deleteAllReviews.useMutation();
   const utils = trpc.useUtils();
-  const exportQuery = trpc.admin.exportReviews.useQuery({ search: search || undefined, status, branchId }, { enabled: false });
+  const exportQuery = trpc.admin.exportReviews.useQuery({ search: debouncedSearch || undefined, status, storeCode }, { enabled: false });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -277,7 +265,8 @@ function ReviewsPage() {
     }
   }, []);
 
-  if (isLoading) return <Loading />;
+  // JANGAN unmount saat loading (bikin input hilang & keyboard Android nutup).
+  // Data lama tetap tampil; hanya spinner halus di area list.
   const canDelete = currentUser?.role === "super_admin";
   const refresh = () => { setSelected([]); utils.admin.reviews.invalidate(); utils.dashboard.overview.invalidate(); };
   const download = async (format: "xlsx" | "ods" | "csv") => {
@@ -322,9 +311,9 @@ function ReviewsPage() {
           <Search className="h-4 w-4 text-slate-400" />
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search receipt or comment" className="h-10 w-full text-sm outline-none" />
         </div>
-        <select value={branchId ?? ""} onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : undefined); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
+        <select value={storeCode ?? ""} onChange={(e) => { setStoreCode(e.target.value || undefined); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
           <option value="">All stores</option>
-          {branches?.map((branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}
+          {storeOptions.map((store) => <option value={store.code} key={store.code}>{store.name}</option>)}
         </select>
         <select value={status ?? ""} onChange={(e) => { setStatus((e.target.value || undefined) as typeof status); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
           <option value="">All statuses</option>

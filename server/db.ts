@@ -150,7 +150,7 @@ async function getJoinedReviews(user?: ScopeUser) {
   return rows;
 }
 
-function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: { branchId?: number; qrCodeId?: number; teamId?: number; status?: string; search?: string; rating?: string; startDate?: string; endDate?: string }) {
+function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: { branchId?: number; qrCodeId?: number; teamId?: number; storeCode?: string; status?: string; search?: string; rating?: string; startDate?: string; endDate?: string }) {
   const start = input.startDate ? new Date(`${input.startDate}T00:00:00`) : undefined;
   const end = input.endDate ? new Date(`${input.endDate}T23:59:59`) : undefined;
   return rows.filter(({ review }) => {
@@ -159,6 +159,10 @@ function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: {
     if (input.branchId && review.branchId !== input.branchId) return false;
     if (input.qrCodeId && review.qrCodeId !== input.qrCodeId) return false;
     if (input.teamId && review.teamId !== input.teamId) return false;
+    if (input.storeCode) {
+      const code = resolveStoreFromTicket(review.receiptNo).code;
+      if (code !== input.storeCode) return false;
+    }
     if (input.status && review.status !== input.status) return false;
     if (input.search && !haystack.includes(input.search.toLowerCase())) return false;
     if (input.rating === "low" && Math.min(review.installationRating, review.groomingRating, review.serviceRating) > 2) return false;
@@ -189,12 +193,23 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
     storeName: storeLabel(review.receiptNo),
   }));
 
+  // store options: unik dari SEMUA review (sebelum filter store) — buat dropdown dinamis
+  const storeMap = new Map<string, string>();
+  for (const { review } of allRows) {
+    const { code, name } = resolveStoreFromTicket(review.receiptNo);
+    if (code && !storeMap.has(code)) storeMap.set(code, name ?? code);
+  }
+  const storeOptions = Array.from(storeMap.entries())
+    .map(([code, name]) => ({ code, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   return {
     items,
     total,
     page,
     pageSize,
     totalPages,
+    storeOptions,
   };
 }
 
@@ -335,11 +350,15 @@ export async function createReview(input: InsertReview, threshold: number) {
   return { duplicate: false as const, reviewId: id };
 }
 
-export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "reviewed" | "resolved" | "archived", userId?: number) {
+export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "reviewed" | "resolved" | "archived", userId?: number, note?: string | null) {
   const detail = await getReviewDetail(user, id);
   if (!detail) throw new Error("Review not found");
   const db = await requireDb();
-  await db.update(reviews).set({ status }).where(eq(reviews.id, id));
+  // note: disimpan saat resolve (opsional); clear saat pindah ke new/archived biar tidak nyangkut
+  const setFields: Record<string, unknown> = { status };
+  if (status === "resolved") setFields.note = note?.trim() ? note.trim() : null;
+  else setFields.note = null;
+  await db.update(reviews).set(setFields).where(eq(reviews.id, id));
   if (status === "resolved") {
     await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date() }).where(and(eq(reviewAlerts.reviewId, id), eq(reviewAlerts.status, "open")));
   }
