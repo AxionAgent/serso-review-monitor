@@ -9,12 +9,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let _stores: Map<string, string> | null = null;
 
+function cleanName(raw: string): string {
+  // Format nama: "{code}-{kode5}-{nama asli}" -> buang 2 segmen pertama, sisakan nama.
+  // Contoh: "5A-J753-HCIR SELMA SINGKAWANG G M" -> "HCIR SELMA SINGKAWANG G M"
+  const parts = raw.split("-");
+  return parts.length > 2 ? parts.slice(2).join("-").trim() : raw.trim();
+}
+
 function loadStores(): Map<string, string> {
   if (_stores) return _stores;
   try {
     const raw = readFileSync(path.join(__dirname, "store.json"), "utf8");
     const entries = JSON.parse(raw) as StoreEntry[];
-    _stores = new Map(entries.map((entry) => [entry.value.toUpperCase(), entry.name]));
+    _stores = new Map(entries.map((entry) => [entry.value.toUpperCase(), cleanName(entry.name)]));
   } catch {
     _stores = new Map();
   }

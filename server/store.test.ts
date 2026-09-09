@@ -3,13 +3,13 @@ import { resolveStoreFromTicket, storeLabel } from "./store";
 
 describe("resolveStoreFromTicket", () => {
   it("parses No Receipt format U{code}.{unit}.{date}.{seq}", () => {
-    expect(resolveStoreFromTicket("U5A.3.20260909.1")).toEqual({ code: "5A", name: "5A-J753-HCIR SELMA SINGKAWANG G M" });
-    expect(resolveStoreFromTicket("UD7.3.20260909.1")).toEqual({ code: "D7", name: "D7-J390-HCIR INFORMA PONTIANAK" });
-    expect(resolveStoreFromTicket("U00.3.20260901")).toEqual({ code: "00", name: "00-H300-Head Office Home Center Indonesia" });
+    expect(resolveStoreFromTicket("U5A.3.20260909.1")).toEqual({ code: "5A", name: "HCIR SELMA SINGKAWANG G M" });
+    expect(resolveStoreFromTicket("UD7.3.20260909.1")).toEqual({ code: "D7", name: "HCIR INFORMA PONTIANAK" });
+    expect(resolveStoreFromTicket("U00.3.20260901")).toEqual({ code: "00", name: "Head Office Home Center Indonesia" });
   });
 
   it("parses No DO format {code}.{serial}", () => {
-    expect(resolveStoreFromTicket("5A.XA.000172")).toEqual({ code: "5A", name: "5A-J753-HCIR SELMA SINGKAWANG G M" });
+    expect(resolveStoreFromTicket("5A.XA.000172")).toEqual({ code: "5A", name: "HCIR SELMA SINGKAWANG G M" });
   });
 
   it("handles empty / null input", () => {
