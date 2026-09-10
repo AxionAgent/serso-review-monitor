@@ -34,6 +34,7 @@ import {
   assignReview,
   getAllNonArchivedReviews,
 } from "./db";
+import { buildSummaryPrompt } from "./analytics";
 import { settings as settingsTable } from "../drizzle/schema";
 
 const statusSchema = z.enum(["new", "open", "resolved", "archived"]);
@@ -187,15 +188,11 @@ export const appRouter = router({
     deleteAllReviews: superAdminProcedure.mutation(({ ctx }) => deleteAllReviews(ctx.user.id)),
   deleteArchivedReviews: superAdminProcedure.mutation(({ ctx }) => deleteArchivedReviews(ctx.user.id)),
   analyticsSummarize: protectedProcedure.mutation(async ({ ctx }) => {
-    const reviews = await getAllNonArchivedReviews(ctx.user);
-    if (!reviews.length) return { summary: "Belum ada review untuk dianalisis.", generatedAt: new Date().toISOString() };
-    const prompt = [
-      "Analisis ulasan pelanggan berikut (rating 1-5, komentar, store) dan buat ringkasan eksekutif berbahasa Indonesia.",
-      "Fokus: (1) pola umum kepuasan/keluhan, (2) store dengan masalah, (3) 3-5 rekomendasi aksi konkret untuk tim lapangan.",
-      "Format: paragraf pendek + bullet points.",
-      "",
-      ...reviews.slice(0, 40).map((r, i) => `${i + 1}. [${r.storeName ?? r.storeCode ?? "?"}] rating ${r.installationRating}/${r.groomingRating}/${r.serviceRating} status ${r.status}: ${r.comment ?? "-"}`),
-    ].join("\n");
+    // V2: window 7 hari terakhir + buang branch uji. Lihat db.ts::getAllNonArchivedReviews.
+    const reviews = await getAllNonArchivedReviews(ctx.user, 7);
+    if (!reviews.length) return { summary: "Tidak ada review dalam 7 hari terakhir untuk dianalisis.", generatedAt: new Date().toISOString() };
+    // Statistik dihitung server-side di analytics.ts — LLM terbukti salah hitung dari data mentah.
+    const prompt = buildSummaryPrompt(reviews);
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30_000);

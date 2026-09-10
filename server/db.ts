@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, like, lt, ne, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, like, lt, ne, notInArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLogs,
@@ -487,10 +487,19 @@ export async function listAlerts(user: ScopeUser, existingRows?: Awaited<ReturnT
   return alerts.map((alert) => ({ ...alert, ...(index.get(alert.reviewId) ?? {}) }));
 }
 
-/** Get all non-archived reviews for AI summarizer */
-export async function getAllNonArchivedReviews(user: ScopeUser) {
+/** V2: branch yang tidak boleh masuk analitik/AI (branch uji coba, masih `active` di DB). */
+const ANALYTICS_EXCLUDED_BRANCH_CODES = ["TEST"];
+
+/** Review non-archived dalam `days` hari terakhir, untuk AI summarizer.
+ *  - window waktu: dashboard diminta "7 hari terakhir", bukan "N terbaru"
+ *  - buang branch uji (TEST POOL)
+ *  - hanya branch aktif (branch nonaktif = data histNonaktif, bukan kondisi sekarang)
+ */
+export async function getAllNonArchivedReviews(user: ScopeUser, days = 7) {
   const db = await requireDb();
   const scope = scopedBranchId(user);
+  const since = new Date();
+  since.setDate(since.getDate() - days);
   const rows = await db
     .select({
       receiptNo: reviews.receiptNo,
@@ -501,15 +510,22 @@ export async function getAllNonArchivedReviews(user: ScopeUser) {
       status: reviews.status,
       createdAt: reviews.createdAt,
       storeName: branches.name,
+      branchCode: branches.code,
     })
     .from(reviews)
     .leftJoin(branches, eq(reviews.branchId, branches.id))
     .where(and(
       scope === undefined ? undefined : eq(reviews.branchId, scope),
       ne(reviews.status, "archived"),
+      gte(reviews.createdAt, since),
+      or(
+        // branchId NULL (QR universal, belum ter-assign) tetap ikut
+        isNull(reviews.branchId),
+        and(ne(branches.status, "inactive"), notInArray(branches.code, ANALYTICS_EXCLUDED_BRANCH_CODES)),
+      ),
     ))
     .orderBy(desc(reviews.createdAt))
-    .limit(50);
+    .limit(200);
   return rows.map((r) => ({
     ...r,
     storeCode: resolveStoreFromTicket(r.receiptNo).code,
