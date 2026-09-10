@@ -84,7 +84,7 @@ export const reviews = mysqlTable(
     serviceRating: int("serviceRating").notNull(),
     comment: text("comment"),
     note: text("note"),
-    status: mysqlEnum("status", ["new", "open", "reviewed", "resolved", "archived"]).default("new").notNull(),
+    status: mysqlEnum("status", ["new", "open", "resolved", "archived"]).default("new").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },

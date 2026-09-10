@@ -72,6 +72,22 @@ export function scopedBranchId(user: ScopeUser) {
   return user?.role === "branch_admin" ? user.branchId ?? -1 : undefined;
 }
 
+/** V2: status yang disembunyikan dari semua role selain super_admin.
+ *  - `archived` : arsip, super_admin only
+ *  - `reviewed` : status hantu warisan scaffold lama, tidak dipakai flow V2
+ */
+const ADMIN_HIDDEN_STATUSES = ["archived", "reviewed"] as const;
+export function hiddenStatusesFor(user: ScopeUser): Set<string> {
+  return user?.role === "super_admin" ? new Set<string>() : new Set<string>(ADMIN_HIDDEN_STATUSES);
+}
+
+/** Reviews yang boleh dilihat user ini (super_admin = semua, lainnya tanpa hidden). */
+export async function getVisibleJoinedReviews(user: ScopeUser) {
+  const hidden = hiddenStatusesFor(user);
+  const rows = await getJoinedReviews(user);
+  return hidden.size ? rows.filter(({ review }) => !hidden.has(review.status)) : rows;
+}
+
 async function requireDb() {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
@@ -178,8 +194,12 @@ function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: {
 }
 
 export async function listReviews(user: ScopeUser, input: Parameters<typeof filterRows>[1] & { page?: number; pageSize?: number } = {}) {
-  const joined = await getJoinedReviews(user);
-  const allRows = filterRows(joined, input);
+  const joined = await getVisibleJoinedReviews(user);
+  // V2: admin tidak bisa memfilter ke status yang tersembunyi — paksa kosong,
+  // biar query param manual `?status=archived` tidak bocorin arsip.
+  const hidden = hiddenStatusesFor(user);
+  const safeInput = input.status && hidden.has(input.status) ? { ...input, status: "__HIDDEN__" } : input;
+  const allRows = filterRows(joined, safeInput);
   const total = allRows.length;
   const page = Math.max(1, input.page ?? 1);
   const pageSize = Math.max(1, Math.min(100, input.pageSize ?? 10));
@@ -234,6 +254,7 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
 export async function getReviewDetail(user: ScopeUser, id: number) {
   const db = await requireDb();
   const branchId = scopedBranchId(user);
+  const hidden = hiddenStatusesFor(user);
   // Direct query by id — avoids fetching all reviews (was O(N))
   const rows = await db
     .select({ review: reviews, branch: branches, qr: qrCodes, team: teams })
@@ -245,6 +266,9 @@ export async function getReviewDetail(user: ScopeUser, id: number) {
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  // V2: admin tidak boleh buka detail review yang tersembunyi dari listnya
+  // (arsip/hantu) — biar `?id=` manual tidak jadi celah.
+  if (hidden.has(row.review.status)) return undefined;
   const alerts = await db.select().from(reviewAlerts).where(eq(reviewAlerts.reviewId, id)).orderBy(desc(reviewAlerts.createdAt));
   return { ...row.review, branch: row.branch, qr: row.qr, team: row.team, overall: overallRating(row.review), storeCode: resolveStoreFromTicket(row.review.receiptNo).code, storeName: storeLabel(row.review.receiptNo), alerts };
 }
@@ -407,7 +431,7 @@ export async function createReview(input: InsertReview, threshold: number) {
   return { duplicate: false as const, reviewId: id };
 }
 
-export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "open" | "reviewed" | "resolved" | "archived", userId?: number, note?: string | null) {
+export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "open" | "resolved" | "archived", userId?: number, note?: string | null) {
   const detail = await getReviewDetail(user, id);
   if (!detail) throw new Error("Review not found");
   // Rule: status resolved/archived ↛ new (irreversible). Boleh resolved→archived.
@@ -421,10 +445,6 @@ export async function updateReviewStatus(user: ScopeUser, id: number, status: "n
   }
   if (detail.status === "new" && status === "open" && user?.role === "viewer") {
     throw new Error("Viewer tidak dapat mengubah status.");
-  }
-  if ((detail.status === "new" || detail.status === "reviewed") && status === "resolved") {
-    // allowed — admin/superadmin boleh langsung resolve dari new? V2: admin hanya open↔resolved,
-    // jadi transisi new→resolved untuk admin diizinkan hanya lewat open dulu? Keep open for super_admin.
   }
   const db = await requireDb();
   // note: disimpan saat resolve (opsional); clear saat pindah ke new/archived biar tidak nyangkut
@@ -450,12 +470,24 @@ export async function assignReview(user: ScopeUser, id: number, branchId: number
 }
 
 export async function listAlerts(user: ScopeUser, existingRows?: Awaited<ReturnType<typeof getJoinedReviews>>) {
-  const rows = existingRows ?? await getJoinedReviews(user);
+  const rows = existingRows ?? await getVisibleJoinedReviews(user);
   const ids = rows.map(({ review }) => review.id);
   if (!ids.length) return [];
   const db = await requireDb();
   const alerts = await db.select().from(reviewAlerts).where(inArray(reviewAlerts.reviewId, ids)).orderBy(desc(reviewAlerts.createdAt));
-  const index = new Map(rows.map(({ review, branch }) => [review.id, { receiptNo: review.receiptNo, branchName: branch?.name ?? "Unassigned", storeName: storeLabel(review.receiptNo), storeCode: resolveStoreFromTicket(review.receiptNo).code, overall: overallRating(review) }]));
+  // V2: alert card butuh isi review (komentar + 3 sub-rating) supaya admin tahu
+  // apa yang di-resolve, bukan cuma overall-nya.
+  const index = new Map(rows.map(({ review, branch }) => [review.id, {
+    receiptNo: review.receiptNo,
+    branchName: branch?.name ?? "Unassigned",
+    storeName: storeLabel(review.receiptNo),
+    storeCode: resolveStoreFromTicket(review.receiptNo).code,
+    overall: overallRating(review),
+    comment: review.comment ?? null,
+    installationRating: review.installationRating,
+    groomingRating: review.groomingRating,
+    serviceRating: review.serviceRating,
+  }]));
   return alerts.map((alert) => ({ ...alert, ...(index.get(alert.reviewId) ?? {}) }));
 }
 
@@ -495,7 +527,13 @@ export async function resolveAlert(user: ScopeUser, id: number, userId?: number,
   const targetAlert = alertList[0];
   await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date(), note: note?.trim() ?? null }).where(eq(reviewAlerts.id, id));
   if (targetAlert?.reviewId) {
-    await db.update(reviews).set({ status: "resolved" }).where(eq(reviews.id, targetAlert.reviewId));
+    // V2: hanya majukan review yang masih dalam flow (new/open). Review yang sudah
+    // resolved/archived/reviewed tidak disentuh — resolve alert tak boleh membuka arsip.
+    const target = await db.select({ status: reviews.status }).from(reviews).where(eq(reviews.id, targetAlert.reviewId)).limit(1);
+    const current = target[0]?.status;
+    if (current === "new" || current === "open") {
+      await db.update(reviews).set({ status: "resolved" }).where(eq(reviews.id, targetAlert.reviewId));
+    }
   }
   await createAuditLog({ userId, action: "Resolved review alert & updated review status", targetType: "review_alert", targetId: id });
   return { success: true };

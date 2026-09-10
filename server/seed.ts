@@ -34,12 +34,11 @@ const RECEIPT_PREFIXES = ["MC", "MD", "MO", "MB", "MS", "U"];
  *  JANGAN pakai angka 1-9 — katalog pakai alfanumerik, kode tak dikenal tampil "Unknown". */
 const STORE_CODES = ["5A", "3M", "3N", "D7", "PP", "1U", "00"];
 
-/** V2 status distribution: new(30%), open(15%), reviewed(15%), resolved(35%), archived(5%) */
-function statusFor(index: number): "new" | "open" | "reviewed" | "resolved" | "archived" {
+/** V2 status distribution: new(30%), open(30%), resolved(35%), archived(5%) */
+function statusFor(index: number): "new" | "open" | "resolved" | "archived" {
   const r = index % 20;
   if (r < 6) return "new";
-  if (r < 9) return "open";
-  if (r < 12) return "reviewed";
+  if (r < 12) return "open";
   if (r < 19) return "resolved";
   return "archived";
 }

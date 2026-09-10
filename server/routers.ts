@@ -36,7 +36,7 @@ import {
 } from "./db";
 import { settings as settingsTable } from "../drizzle/schema";
 
-const statusSchema = z.enum(["new", "open", "reviewed", "resolved", "archived"]);
+const statusSchema = z.enum(["new", "open", "resolved", "archived"]);
 const dateFilters = z.object({
   branchId: z.number().int().positive().optional(),
   qrCodeId: z.number().int().positive().optional(),

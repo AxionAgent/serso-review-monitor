@@ -83,8 +83,18 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
         <div className="w-full max-w-lg rounded-2xl bg-white p-8 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#2f6fed]" />
-          <p className="mt-3 text-sm text-slate-500 font-medium">Memuat detail review...</p>
+          {isLoading ? (
+            <>
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#2f6fed]" />
+              <p className="mt-3 text-sm text-slate-500 font-medium">Memuat detail review...</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-slate-700">Review tidak dapat ditampilkan.</p>
+              <p className="mt-1 text-xs text-slate-500">Review ini di luar jangkauan status akun Anda, atau sudah dihapus.</p>
+              <button onClick={onClose} className="mt-4 h-10 rounded-xl bg-slate-100 px-4 text-sm font-bold text-slate-700 hover:bg-slate-200">Tutup</button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -383,15 +393,23 @@ function ReviewsPage() {
                       </button>
                       <select
                         value={review.status}
-                        onChange={(e) => update.mutate({ id: review.id, status: e.target.value as "new" | "open" | "resolved" | "archived" }, { onSuccess: () => utils.admin.reviews.invalidate() })}
-                        disabled={!canDelete && (review.status === "archived" || review.status === "new")}
+                        onChange={(e) => {
+                          const nextStatus = e.target.value as "new" | "open" | "resolved" | "archived";
+                          // V2: Resolved butuh catatan tindakan — buka modal detail dgn textarea note.
+                          if (nextStatus === "resolved") {
+                            setDetailReviewId(review.id);
+                            return;
+                          }
+                          update.mutate({ id: review.id, status: nextStatus }, { onSuccess: () => utils.admin.reviews.invalidate() });
+                        }}
+                        disabled={!canDelete && review.status === "archived"}
                         className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        {canDelete ? <option value="new" disabled={review.status !== "new"}>New</option> : <option value="new" disabled>New</option>}
+                        {/* V2: admin hanya lihat New/Open/Resolved. Archived = super_admin only. */}
+                        <option value="new" disabled={review.status !== "new"}>New</option>
                         <option value="open">Open</option>
                         <option value="resolved">Resolved</option>
-                        {/* V2: archive hanya boleh super_admin */}
-                        <option value="archived" disabled={!canDelete}>Archived</option>
+                        {canDelete ? <option value="archived">Archived</option> : null}
                       </select>
                     </div>
                   </td>
@@ -452,6 +470,8 @@ function AlertsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [resolveNote, setResolveNote] = useState("");
   const [resolveAlertId, setResolveAlertId] = useState<number | null>(null);
+  // V2: admin harus lihat isi review dulu sebelum mark resolved
+  const [detailAlertId, setDetailAlertId] = useState<number | null>(null);
 
   if (isLoading || !alerts) return <Loading />;
 
@@ -520,29 +540,55 @@ function AlertsPage() {
             </div>
             <div className="min-w-[180px] flex-1">
               <div className="flex items-center gap-2">
-                <p className="font-bold text-slate-800">{alert.receiptNo}</p>
-                <StatusBadge status={alert.status === "open" ? "new" : "resolved"} />
+                <button
+                  onClick={() => setDetailAlertId(alert.reviewId)}
+                  className="font-bold text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-[#2f6fed]"
+                >
+                  {alert.receiptNo}
+                </button>
+                <StatusBadge status={alert.status} />
               </div>
               <p className="mt-1 text-sm text-slate-500">{alert.storeName ?? alert.branchName} · {alert.message}</p>
               <p className="mt-1 text-xs text-slate-400">
                 Rating overall {Number(alert.overall).toFixed(2)} · {moneyDate(alert.createdAt)}
               </p>
+              {/* V2: admin harus tahu isi review sebelum mark resolved */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                <span>Install <b className="text-slate-700">{(alert.installationRating ?? 0).toFixed(1)}</b></span>
+                <span>Groom <b className="text-slate-700">{(alert.groomingRating ?? 0).toFixed(1)}</b></span>
+                <span>Service <b className="text-slate-700">{(alert.serviceRating ?? 0).toFixed(1)}</b></span>
+              </div>
+              {alert.comment ? (
+                <p className="mt-2 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-xs italic text-slate-600">
+                  “{alert.comment}”
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-400 italic">Pelanggan tidak menulis komentar.</p>
+              )}
               {alert.note && (
                 <p className="mt-1 text-xs text-slate-400">
                   Note: <span className="text-slate-600">{alert.note}</span>
                 </p>
               )}
             </div>
-            {alert.status === "open" ? (
+            <div className="flex shrink-0 flex-col gap-2">
               <button
-                onClick={() => handleResolve(alert.id)}
-                className="rounded-xl bg-[#2f6fed] px-4 py-2.5 text-xs font-bold text-white"
+                onClick={() => setDetailAlertId(alert.reviewId)}
+                className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-[#2f6fed] hover:text-[#2f6fed]"
               >
-                Mark resolved
+                <Eye className="h-3.5 w-3.5" /> Lihat review
               </button>
-            ) : (
-              <span className="text-xs font-semibold text-emerald-600">Resolved</span>
-            )}
+              {alert.status === "open" ? (
+                <button
+                  onClick={() => handleResolve(alert.id)}
+                  className="rounded-xl bg-[#2f6fed] px-4 py-2.5 text-xs font-bold text-white"
+                >
+                  Mark resolved
+                </button>
+              ) : (
+                <span className="text-center text-xs font-semibold text-emerald-600">Resolved</span>
+              )}
+            </div>
           </div>
         ))}
         {!alerts.length ? (
@@ -592,6 +638,20 @@ function AlertsPage() {
           </div>
         </div>
       )}
+
+      {/* Detail review dari alert — admin baca isi dulu sebelum mark resolved */}
+      {detailAlertId ? (
+        <ReviewDetailModal
+          reviewId={detailAlertId}
+          onClose={() => setDetailAlertId(null)}
+          onStatusChange={() => {
+            utils.admin.alerts.invalidate();
+            utils.admin.reviews.invalidate();
+            utils.dashboard.overview.invalidate();
+            setDetailAlertId(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -872,7 +932,7 @@ function SettingsPage() {
 }
 function PageHeading({ eyebrow, title, subtitle, action }: { eyebrow: string; title: string; subtitle: string; action?: React.ReactNode }) { return <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f6fed]">{eyebrow}</p><h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{title}</h2><p className="mt-2 text-sm text-slate-500">{subtitle}</p></div>{action}</div>; }
 function SummaryCard({ label, value, tone }: { label: string; value: number; tone: "rose" | "amber" | "green" }) { const style = { rose: "text-rose-600 bg-rose-50", amber: "text-amber-600 bg-amber-50", green: "text-emerald-600 bg-emerald-50" }[tone]; return <div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className={`mb-4 grid h-10 w-10 place-items-center rounded-xl ${style}`}><Bell className="h-4 w-4" /></div><p className="text-3xl font-bold text-slate-900">{value}</p><p className="mt-1 text-xs text-slate-400">{label}</p></div>; }
-function StatusBadge({ status }: { status: string }) { const style = status === "new" ? "bg-sky-50 text-sky-700" : status === "open" ? "bg-amber-50 text-amber-700" : status === "reviewed" ? "bg-violet-50 text-violet-700" : status === "resolved" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"; return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${style}`}>{status}</span>; }
+function StatusBadge({ status }: { status: string }) { const style = status === "new" ? "bg-sky-50 text-sky-700" : status === "open" ? "bg-amber-50 text-amber-700" : status === "resolved" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"; return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${style}`}>{status}</span>; }
 function Input({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) { return <label className="block space-y-2 text-sm font-semibold text-slate-700">{label}<input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="mt-1 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-normal outline-none focus:border-[#2f6fed] focus:ring-4 focus:ring-[#2f6fed]/10" /></label>; }
 function FormCard({ title, onSubmit, children }: { title: string; onSubmit: (e: React.FormEvent) => void; children: React.ReactNode }) { return <form onSubmit={onSubmit} className="grid gap-4 rounded-2xl border border-[#cfe0ff] bg-[#f6f9ff] p-5 sm:grid-cols-2"><div className="sm:col-span-2"><p className="text-sm font-bold text-[#0f2f5f]">{title}</p></div>{children}</form>; }
 function Empty({ text }: { text: string }) { return <div className="px-6 py-12 text-center text-sm text-slate-400">{text}</div>; }

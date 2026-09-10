@@ -1,0 +1,1 @@
+ALTER TABLE `reviews` MODIFY COLUMN `status` enum('new','open','resolved','archived') NOT NULL DEFAULT 'new';
