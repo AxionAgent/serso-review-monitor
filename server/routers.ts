@@ -7,18 +7,13 @@ import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router, superAdminProcedure } from "./_core/trpc";
 import {
-  createBranch,
-  deleteAllReviews,
-  deleteBranch,
-  deleteQRCode,
-  deleteReview,
-  deleteTeam,
-  getUserByOpenId,
-  upsertUser,
   createQRCode,
   createReview,
-  createTeam,
   dashboardData,
+  deleteAllReviews,
+  deleteArchivedReviews,
+  deleteQRCode,
+  deleteReview,
   exportReviews,
   findActiveQR,
   findReviewsBySearch,
@@ -26,23 +21,22 @@ import {
   getDb,
   getReviewDetail,
   getSettings,
-  isSuperAdmin,
+  getUserByOpenId,
   listAlerts,
-  listBranches,
   listPublicRoutes,
   listQRCodes,
   listReviews,
-  listTeams,
   resolveAlert,
   scopedBranchId,
-  toggleBranch,
   toggleQRCode,
   updateReviewStatus,
+  upsertUser,
   assignReview,
+  getAllNonArchivedReviews,
 } from "./db";
 import { settings as settingsTable } from "../drizzle/schema";
 
-const statusSchema = z.enum(["new", "reviewed", "resolved", "archived"]);
+const statusSchema = z.enum(["new", "open", "reviewed", "resolved", "archived"]);
 const dateFilters = z.object({
   branchId: z.number().int().positive().optional(),
   qrCodeId: z.number().int().positive().optional(),
@@ -78,6 +72,20 @@ setInterval(() => {
   });
 }, 5 * 60 * 1000).unref();
 
+/**
+ * Auto lifecycle: review yang masih "new" setelah 24 jam → "open" (masih butuh tindakan).
+ * Review yang masih "open" setelah 7 hari → "resolved" (otomatis selesaikan).
+ * Di‑jalankan setiap 10 menit. Tidak mengubah review yang sudah resolved/archived.
+ */
+setInterval(async () => {
+  try {
+    const { autoTransitionReviewStatus } = await import("./db");
+    await autoTransitionReviewStatus();
+  } catch (error) {
+    console.warn("[Lifecycle] Auto-status update failed:", error);
+  }
+}, 10 * 60 * 1000).unref();
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -85,7 +93,7 @@ export const appRouter = router({
     login: publicProcedure.input(z.object({ username: z.string().min(1).max(80), password: z.string().min(1).max(120) })).mutation(async ({ input, ctx }) => {
       const adminUser = process.env.ADMIN_USERNAME ?? "admin";
       const adminPass = process.env.ADMIN_PASSWORD ?? "admin";
-      const superPass = process.env.SUPERADMIN_PASSWORD ?? "super123";
+      const superPass = process.env.SUPERADMIN_PASSWORD ?? "super1234";
       const credentials = input.username === adminUser && input.password === adminPass
         ? { openId: "demo-admin@example.com", name: "Workspace Admin", email: "admin@example.com", role: "admin" as const }
         : input.username === "superadmin" && input.password === superPass
@@ -143,7 +151,7 @@ export const appRouter = router({
         if (match.branch && match.branch.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Branch tidak tersedia." });
         const settings = await getSettings();
         // V2: QR universal → review dibuat tanpa branch (unassigned), admin assign manual
-        const result = await createReview({ branchId: match.branch?.id ?? null, qrCodeId: match.qr.id, receiptNo: input.receiptNo, installationRating: input.installationRating, groomingRating: input.groomingRating, serviceRating: input.serviceRating, comment: input.comment || null, teamId: input.teamId ?? null, status: "new" }, settings.negativeThreshold);
+        const result = await createReview({ branchId: match.branch?.id ?? null, qrCodeId: match.qr.id, receiptNo: input.receiptNo, installationRating: input.installationRating, groomingRating: input.groomingRating, serviceRating: input.serviceRating, comment: input.comment || null, teamId: input.teamId ?? null, status: "new" }, Number(settings.negativeThreshold));
         if (result.duplicate) return { duplicate: true as const };
         return { duplicate: false as const, reviewId: result.reviewId };
       }),
@@ -152,17 +160,6 @@ export const appRouter = router({
     overview: publicProcedure.input(dateFilters.default({})).query(({ input, ctx }) => dashboardData(ctx.user, input)),
   }),
   admin: router({
-    branches: protectedProcedure.query(({ ctx }) => listBranches(ctx.user)),
-    createBranch: adminProcedure.input(z.object({ name: z.string().trim().min(2).max(160), code: z.string().trim().min(2).max(16).regex(/^[A-Za-z0-9-]+$/), address: z.string().trim().max(255).optional() })).mutation(async ({ input, ctx }) => createBranch({ ...input, code: input.code.toUpperCase(), address: input.address || null, status: "active" }, ctx.user.id)),
-    toggleBranch: adminProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["active", "inactive"]) })).mutation(({ input, ctx }) => toggleBranch(input.id, input.status, ctx.user.id)),
-    deleteBranch: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteBranch(input.id, ctx.user.id)),
-    teams: protectedProcedure.query(({ ctx }) => listTeams(ctx.user)),
-    createTeam: protectedProcedure.input(z.object({ branchId: z.number().int().positive(), name: z.string().trim().min(2).max(160) })).mutation(async ({ input, ctx }) => {
-      assertWritable(ctx.user);
-      assertBranchScope(ctx.user, input.branchId);
-      return createTeam({ ...input, status: "active" }, ctx.user.id);
-    }),
-    deleteTeam: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteTeam(input.id, ctx.user.id)),
     qrCodes: protectedProcedure.query(({ ctx }) => listQRCodes(ctx.user)),
     createQRCode: protectedProcedure.input(z.object({ branchId: z.number().int().positive(), name: z.string().trim().min(2).max(160) })).mutation(async ({ input, ctx }) => {
       assertWritable(ctx.user);
@@ -188,17 +185,57 @@ export const appRouter = router({
     }),
     deleteReview: superAdminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteReview(ctx.user, input.id, ctx.user.id)),
     deleteAllReviews: superAdminProcedure.mutation(({ ctx }) => deleteAllReviews(ctx.user.id)),
-    alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),
-    resolveAlert: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return resolveAlert(ctx.user, input.id, ctx.user.id); }),
+  deleteArchivedReviews: superAdminProcedure.mutation(({ ctx }) => deleteArchivedReviews(ctx.user.id)),
+  analyticsSummarize: protectedProcedure.mutation(async ({ ctx }) => {
+    const reviews = await getAllNonArchivedReviews(ctx.user);
+    if (!reviews.length) return { summary: "Belum ada review untuk dianalisis.", generatedAt: new Date().toISOString() };
+    const prompt = [
+      "Analisis ulasan pelanggan berikut (rating 1-5, komentar, store) dan buat ringkasan eksekutif berbahasa Indonesia.",
+      "Fokus: (1) pola umum kepuasan/keluhan, (2) store dengan masalah, (3) 3-5 rekomendasi aksi konkret untuk tim lapangan.",
+      "Format: paragraf pendek + bullet points.",
+      "",
+      ...reviews.slice(0, 40).map((r, i) => `${i + 1}. [${r.storeName ?? r.storeCode ?? "?"}] rating ${r.installationRating}/${r.groomingRating}/${r.serviceRating} status ${r.status}: ${r.comment ?? "-"}`),
+    ].join("\n");
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
+      const res = await fetch("http://168.110.194.241:20128/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer sk-d15384f5e8af0ec9-f97uvn-6795aad9" },
+        body: JSON.stringify({ model: "serso-review", stream: false, messages: [{ role: "user", content: prompt }], max_tokens: 1000, temperature: 0.4 }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error(`LLM ${res.status}`);
+      const raw = await res.text();
+      // ponytail: upstream kadang balas SSE walau stream:false — ambil objek JSON pertama sebelum "data: [DONE]"
+      const firstJson = raw.indexOf("{");
+      const lastJson = raw.lastIndexOf("}");
+      const body = JSON.parse(firstJson >= 0 && lastJson > firstJson ? raw.slice(firstJson, lastJson + 1) : raw) as { choices?: { message?: { content?: string } }[] };
+      const summary = body.choices?.[0]?.message?.content?.trim() ?? "Gagal menghasilkan ringkasan.";
+      return { summary, generatedAt: new Date().toISOString() };
+    } catch (error) {
+      const message = error instanceof Error && error.name === "AbortError" ? "Waktu analisis habis (30 detik)." : error instanceof Error ? error.message : String(error);
+      return { summary: `AI summarizer gagal: ${message}`, generatedAt: new Date().toISOString() };
+    }
+  }),
+  alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),
+    resolveAlert: protectedProcedure
+      .input(z.object({ id: z.number().int().positive(), note: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        assertWritable(ctx.user);
+        return resolveAlert(ctx.user, input.id, ctx.user.id, input.note);
+      }),
     exportReviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => exportReviews(ctx.user, input)),
     search: protectedProcedure.input(z.object({ search: z.string().min(2).max(80) })).query(({ input, ctx }) => findReviewsBySearch(ctx.user, input.search)),
     settings: protectedProcedure.query(() => getSettings()),
-    updateSettings: adminProcedure.input(z.object({ companyName: z.string().min(2).max(160), reviewPageTitle: z.string().min(2).max(160), thankYouMessage: z.string().min(2).max(500), negativeThreshold: z.number().int().min(1).max(3), timezone: z.string().min(2).max(64), primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/) })).mutation(async ({ input }) => {
+    updateSettings: adminProcedure.input(z.object({ companyName: z.string().min(2).max(160), reviewPageTitle: z.string().min(2).max(160), thankYouMessage: z.string().min(2).max(500), negativeThreshold: z.number().min(1).max(5), timezone: z.string().min(2).max(64), primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/) })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const payload = { ...input, negativeThreshold: input.negativeThreshold.toFixed(1) };
       const rows = await db.select().from(settingsTable).limit(1);
-      if (rows[0]) await db.update(settingsTable).set(input).where(eq(settingsTable.id, rows[0].id));
-      else await db.insert(settingsTable).values(input);
+      if (rows[0]) await db.update(settingsTable).set(payload).where(eq(settingsTable.id, rows[0].id));
+      else await db.insert(settingsTable).values(payload);
       return getSettings();
     }),
   }),

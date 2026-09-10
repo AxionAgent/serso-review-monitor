@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, like, or } from "drizzle-orm";
+import { and, desc, eq, inArray, like, lt, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLogs,
@@ -161,7 +161,11 @@ function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: {
     if (input.teamId && review.teamId !== input.teamId) return false;
     if (input.storeCode) {
       const code = resolveStoreFromTicket(review.receiptNo).code;
-      if (code !== input.storeCode) return false;
+      if (input.storeCode === "__UNKNOWN__") {
+        if (code) return false;
+      } else if (code !== input.storeCode) {
+        return false;
+      }
     }
     if (input.status && review.status !== input.status) return false;
     if (input.search && !haystack.includes(input.search.toLowerCase())) return false;
@@ -200,11 +204,22 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
   const storeMap = new Map<string, string>();
   for (const { review } of joined) {
     const { code, name } = resolveStoreFromTicket(review.receiptNo);
-    if (code && !storeMap.has(code)) storeMap.set(code, storeLabel(review.receiptNo) ?? code);
+    if (code) {
+      storeMap.set(code, name ?? code);
+    }
+  }
+  // Add single Unknown placeholder if any receipt could not be resolved
+  const hasUnknown = joined.some(({ review }) => !resolveStoreFromTicket(review.receiptNo).code);
+  if (hasUnknown) {
+    storeMap.set("__UNKNOWN__", "Unknown");
   }
   const storeOptions = Array.from(storeMap.entries())
     .map(([code, name]) => ({ code, name }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      if (a.code === "__UNKNOWN__") return 1;
+      if (b.code === "__UNKNOWN__") return -1;
+      return a.name.localeCompare(b.name);
+    });
 
   return {
     items,
@@ -296,6 +311,43 @@ export async function deleteReview(user: ScopeUser, id: number, userId?: number)
   return { success: true };
 }
 
+/**
+ * Superadmin-only: delete all ARCHIVED reviews + their alerts.
+ * Archived reviews are excluded from analytics, so this is a safe cleanup
+ * for old resolved-but-archived rows.
+ */
+export async function deleteArchivedReviews(userId?: number) {
+  const db = await requireDb();
+  const rows = await db.select({ id: reviews.id }).from(reviews).where(eq(reviews.status, "archived"));
+  const ids = rows.map((row) => row.id);
+  if (ids.length) {
+    await db.delete(reviewAlerts).where(inArray(reviewAlerts.reviewId, ids));
+    await db.delete(reviews).where(inArray(reviews.id, ids));
+  }
+  await createAuditLog({ userId, action: "Deleted archived reviews", targetType: "review", targetId: null, metadata: JSON.stringify({ count: ids.length }) });
+  return { success: true, deleted: ids.length };
+}
+
+/**
+ * Auto lifecycle: review yang masih "new" setelah 24 jam → "open" (masih butuh tindakan).
+ * Review yang masih "open" setelah 7 hari → "resolved" (otomatis selesaikan).
+ * Tidak menyentuh review yang sudah resolved/archived.
+ */
+export async function autoTransitionReviewStatus() {
+  const db = await requireDb();
+  const now = new Date();
+  const openThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const resolvedThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const openResult = await db.update(reviews).set({ status: "open", updatedAt: now }).where(and(eq(reviews.status, "new"), lt(reviews.createdAt, openThreshold)));
+  const resolvedResult = await db.update(reviews).set({ status: "resolved", updatedAt: now }).where(and(eq(reviews.status, "open"), lt(reviews.createdAt, resolvedThreshold)));
+  const openCount = Number(openResult[0].affectedRows ?? 0);
+  const resolvedCount = Number(resolvedResult[0].affectedRows ?? 0);
+  if (openCount || resolvedCount) {
+    console.log(`[Lifecycle] ${openCount} review → open, ${resolvedCount} review → resolved`);
+  }
+  return { open: openCount, resolved: resolvedCount };
+}
+
 export async function deleteAllReviews(userId?: number) {
   const db = await requireDb();
   const rows = await db.select({ id: reviews.id }).from(reviews);
@@ -340,7 +392,9 @@ export async function createReview(input: InsertReview, threshold: number) {
 
   const result = await db.insert(reviews).values(input);
   const id = Number(result[0].insertId);
-  if (Math.min(input.installationRating, input.groomingRating, input.serviceRating) <= threshold) {
+  // V2: alert dipicu review dengan rating OVERALL di bawah threshold (default 3.5)
+  // — bukan lagi "ada satu dimensi rendah".
+  if (overallRating(input) < Number(threshold)) {
     const alert: InsertReviewAlert = {
       reviewId: id,
       type: "negative_review",
@@ -353,12 +407,24 @@ export async function createReview(input: InsertReview, threshold: number) {
   return { duplicate: false as const, reviewId: id };
 }
 
-export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "reviewed" | "resolved" | "archived", userId?: number, note?: string | null) {
+export async function updateReviewStatus(user: ScopeUser, id: number, status: "new" | "open" | "reviewed" | "resolved" | "archived", userId?: number, note?: string | null) {
   const detail = await getReviewDetail(user, id);
   if (!detail) throw new Error("Review not found");
   // Rule: status resolved/archived ↛ new (irreversible). Boleh resolved→archived.
   if ((detail.status === "resolved" || detail.status === "archived") && status === "new") {
     throw new Error(`Review yang sudah ${detail.status === "resolved" ? "Resolved" : "Archived"} tidak dapat dikembalikan ke status New.`);
+  }
+  // V2 admin rules: admin cuma bisa open↔resolved, gak bisa archive atau set ke new.
+  if (user?.role !== "super_admin" && user?.role !== "viewer") {
+    if (status === "archived") throw new Error("Hanya super admin yang dapat meng-archive review.");
+    if (status === "new") throw new Error("Admin tidak dapat mengembalikan review ke status New.");
+  }
+  if (detail.status === "new" && status === "open" && user?.role === "viewer") {
+    throw new Error("Viewer tidak dapat mengubah status.");
+  }
+  if ((detail.status === "new" || detail.status === "reviewed") && status === "resolved") {
+    // allowed — admin/superadmin boleh langsung resolve dari new? V2: admin hanya open↔resolved,
+    // jadi transisi new→resolved untuk admin diizinkan hanya lewat open dulu? Keep open for super_admin.
   }
   const db = await requireDb();
   // note: disimpan saat resolve (opsional); clear saat pindah ke new/archived biar tidak nyangkut
@@ -389,15 +455,45 @@ export async function listAlerts(user: ScopeUser, existingRows?: Awaited<ReturnT
   if (!ids.length) return [];
   const db = await requireDb();
   const alerts = await db.select().from(reviewAlerts).where(inArray(reviewAlerts.reviewId, ids)).orderBy(desc(reviewAlerts.createdAt));
-  const index = new Map(rows.map(({ review, branch }) => [review.id, { receiptNo: review.receiptNo, branchName: branch?.name ?? "Unassigned", overall: overallRating(review) }]));
+  const index = new Map(rows.map(({ review, branch }) => [review.id, { receiptNo: review.receiptNo, branchName: branch?.name ?? "Unassigned", storeName: storeLabel(review.receiptNo), storeCode: resolveStoreFromTicket(review.receiptNo).code, overall: overallRating(review) }]));
   return alerts.map((alert) => ({ ...alert, ...(index.get(alert.reviewId) ?? {}) }));
 }
 
-export async function resolveAlert(user: ScopeUser, id: number, userId?: number) {
+/** Get all non-archived reviews for AI summarizer */
+export async function getAllNonArchivedReviews(user: ScopeUser) {
+  const db = await requireDb();
+  const scope = scopedBranchId(user);
+  const rows = await db
+    .select({
+      receiptNo: reviews.receiptNo,
+      installationRating: reviews.installationRating,
+      groomingRating: reviews.groomingRating,
+      serviceRating: reviews.serviceRating,
+      comment: reviews.comment,
+      status: reviews.status,
+      createdAt: reviews.createdAt,
+      storeName: branches.name,
+    })
+    .from(reviews)
+    .leftJoin(branches, eq(reviews.branchId, branches.id))
+    .where(and(
+      scope === undefined ? undefined : eq(reviews.branchId, scope),
+      ne(reviews.status, "archived"),
+    ))
+    .orderBy(desc(reviews.createdAt))
+    .limit(50);
+  return rows.map((r) => ({
+    ...r,
+    storeCode: resolveStoreFromTicket(r.receiptNo).code,
+    storeName: r.storeName ?? storeLabel(r.receiptNo),
+  }));
+}
+
+export async function resolveAlert(user: ScopeUser, id: number, userId?: number, note?: string) {
   const db = await requireDb();
   const alertList = await db.select().from(reviewAlerts).where(eq(reviewAlerts.id, id)).limit(1);
   const targetAlert = alertList[0];
-  await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date() }).where(eq(reviewAlerts.id, id));
+  await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date(), note: note?.trim() ?? null }).where(eq(reviewAlerts.id, id));
   if (targetAlert?.reviewId) {
     await db.update(reviews).set({ status: "resolved" }).where(eq(reviews.id, targetAlert.reviewId));
   }
@@ -408,6 +504,9 @@ export async function resolveAlert(user: ScopeUser, id: number, userId?: number)
 export async function dashboardData(user: ScopeUser, input: { branchId?: number; qrCodeId?: number; teamId?: number; startDate?: string; endDate?: string } = {}) {
   // Archived reviews are excluded from analytics/KPI (V2 spec)
   const rows = filterRows(await getJoinedReviews(user), input).filter(({ review }) => review.status !== "archived");
+  // ambil threshold dari settings (default 3.5)
+  const settings = await getSettings();
+  const threshold = Number(settings.negativeThreshold);
   const now = new Date();
   const todayKey = now.toISOString().slice(0, 10);
   const monthKey = now.toISOString().slice(0, 7);
@@ -440,15 +539,31 @@ export async function dashboardData(user: ScopeUser, input: { branchId?: number;
   const branchesForUser = scopedBranch === undefined ? branchRows : branchRows.filter((row) => row.id === scopedBranch);
   const teamsForUser = scopedBranch === undefined ? teamRows : teamRows.filter((row) => row.branchId === scopedBranch);
   const qrForUser = scopedBranch === undefined ? qrRows : qrRows.filter((row) => row.branchId === scopedBranch);
+
+  // Store analytics: rank by review count per store (from receiptNo)
+  const storeMap = new Map<string, { name: string; count: number; totalRating: number }>();
+  for (const { review } of rows) {
+    const { code, name } = resolveStoreFromTicket(review.receiptNo);
+    if (!code) continue;
+    const entry = storeMap.get(code) ?? { name: name ?? code, count: 0, totalRating: 0 };
+    entry.count += 1;
+    entry.totalRating += overallRating(review);
+    storeMap.set(code, entry);
+  }
+  const storeAnalytics = Array.from(storeMap.entries())
+    .map(([code, v]) => ({ code, name: v.name, reviews: v.count, average: v.count ? Math.round((v.totalRating / v.count) * 100) / 100 : 0 }))
+    .sort((a, b) => b.reviews - a.reviews);
+  const openCount = rows.filter(({ review }) => review.status === "new" || review.status === "open").length;
   return {
-    kpis: { total, average, today: rows.filter(({ review }) => review.createdAt.toISOString().slice(0, 10) === todayKey).length, month: rows.filter(({ review }) => review.createdAt.toISOString().slice(0, 7) === monthKey).length, positive: rows.filter(({ review }) => overallRating(review) >= 4).length, negative: rows.filter(({ review }) => Math.min(review.installationRating, review.groomingRating, review.serviceRating) <= 2).length },
+    kpis: { total, average, today: rows.filter(({ review }) => review.createdAt.toISOString().slice(0, 10) === todayKey).length, month: rows.filter(({ review }) => review.createdAt.toISOString().slice(0, 7) === monthKey).length, positive: rows.filter(({ review }) => overallRating(review) >= threshold).length, negative: rows.filter(({ review }) => overallRating(review) < threshold).length, open: openCount },
+    threshold,
     dimensions: { installation: dimension("installationRating"), grooming: dimension("groomingRating"), service: dimension("serviceRating"), overall: average },
     ratingDistribution,
     trend,
     branchAnalytics: branchesForUser.map((item) => ({ ...aggregate([item])[0], code: item.code })),
     teamAnalytics: teamsForUser.map((item) => ({ ...aggregate([item])[0], branchId: item.branchId })),
-    qrAnalytics: qrForUser.map((item) => ({ ...aggregate([item])[0], code: item.code, branchId: item.branchId })),
-    recentReviews: rows.slice(0, 7).map(({ review, branch, qr }) => ({ ...review, branchName: branch?.name ?? "Unassigned", qrName: qr?.name ?? "Direct", overall: overallRating(review), storeCode: resolveStoreFromTicket(review.receiptNo).code, storeName: storeLabel(review.receiptNo) })),
+    storeAnalytics,
+    recentReviews: rows.slice(0, 7).map(({ review, branch, qr }) => ({ ...review, qrName: qr?.name ?? "Direct", overall: overallRating(review), storeCode: resolveStoreFromTicket(review.receiptNo).code, storeName: storeLabel(review.receiptNo) })),
     alerts: alertRows.slice(0, 8),
     alertSummary: { critical: alertRows.filter((a) => a.status === "open" && a.severity === "critical").length, attention: alertRows.filter((a) => a.status === "open" && a.severity === "attention").length, resolved: alertRows.filter((a) => a.status === "resolved").length },
   };

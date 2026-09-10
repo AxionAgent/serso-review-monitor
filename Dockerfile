@@ -16,6 +16,7 @@ ENV PORT=3000
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
+# ponytail: install devDeps too — drizzle-kit migrate + tsx seed run at container start
 RUN pnpm install --frozen-lockfile
 COPY --from=build /app/dist ./dist
 # v2 static UI (esbuild bundle tdk meng-copy public dir)
@@ -29,6 +30,8 @@ COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/server ./server
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/tsconfig.json ./tsconfig.json
+# COPY above lands as root:root — re-own so USER node can read (drizzle migrate + tsx seed)
+RUN chown -R node:node /app/server /app/shared /app/drizzle.config.ts /app/tsconfig.json /app/drizzle
 
 EXPOSE 3000
 USER node

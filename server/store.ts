@@ -33,14 +33,26 @@ function loadStores(): Map<string, string> {
  * Format yang didukung:
  *  - No Receipt: U{storeCode}.{unit}.{date}.{seq}  -> U5A.3.20260909.1 => store "5A"
  *  - No DO:      {storeCode}.{serial}               -> 5A.XA.000172     => store "5A"
+ *  - Prefix format: {PREFIX}.{storeCode}.{...}     -> MC.5A.20260901.3 => store "5A"
+ *    Prefix yang dikenali: MC, MD, MO, MB, MS (upper/lowercase)
  * Prefix "U" di depan hanya dipakai format No Receipt dan dibuang sebelum parse.
  */
 export function resolveStoreFromTicket(raw?: string | null): { code: string | null; name: string | null } {
   if (!raw) return { code: null, name: null };
   let s = raw.trim();
   if (!s) return { code: null, name: null };
+
+  const prefixMatch = s.match(/^([A-Z]{2,3})\.(.+)$/i);
+  const knownPrefixes = new Set(["MC", "MD", "MO", "MB", "MS"]);
+  if (prefixMatch) {
+    const [, prefix, rest] = prefixMatch;
+    if (knownPrefixes.has(prefix.toUpperCase())) {
+      s = rest;
+    }
+  }
+
   if (s[0] === "U" || s[0] === "u") s = s.slice(1);
-  const code = s.split(".")[0]?.trim().toUpperCase();
+  const code = (s.split(".")[0] ?? "").trim().toUpperCase();
   if (!code) return { code: null, name: null };
   const name = loadStores().get(code) ?? null;
   return { code, name };

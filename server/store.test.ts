@@ -12,6 +12,14 @@ describe("resolveStoreFromTicket", () => {
     expect(resolveStoreFromTicket("5A.XA.000172")).toEqual({ code: "5A", name: "HCIR SELMA SINGKAWANG G M" });
   });
 
+  it("parses supported receipt prefixes before the store code", () => {
+    expect(resolveStoreFromTicket("MC.5A.20260901.3")).toEqual({ code: "5A", name: "HCIR SELMA SINGKAWANG G M" });
+    expect(resolveStoreFromTicket("MD.D7.20260901.3")).toEqual({ code: "D7", name: "HCIR INFORMA PONTIANAK" });
+    expect(resolveStoreFromTicket("MO.00.20260901.3")).toEqual({ code: "00", name: "Head Office Home Center Indonesia" });
+    expect(resolveStoreFromTicket("MB.5A.20260901.3")).toEqual({ code: "5A", name: "HCIR SELMA SINGKAWANG G M" });
+    expect(resolveStoreFromTicket("MS.5A.20260901.3")).toEqual({ code: "5A", name: "HCIR SELMA SINGKAWANG G M" });
+  });
+
   it("handles empty / null input", () => {
     expect(resolveStoreFromTicket(null)).toEqual({ code: null, name: null });
     expect(resolveStoreFromTicket("")).toEqual({ code: null, name: null });
