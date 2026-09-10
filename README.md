@@ -97,6 +97,19 @@ review detail modal and the alerts resolve dialog write it. An alert resolve nev
 review that is already outside the `new`/`open` flow, so archived reviews cannot be silently
 reopened.
 
+## AI Summarize
+
+`admin.analyticsSummarize` builds a prompt from the last **7 days** of reviews via
+`db.ts::getAllNonArchivedReviews(user, 7)`. Excluded: `archived` reviews, `inactive` branches,
+and the branch codes listed in `ANALYTICS_EXCLUDED_BRANCH_CODES` (currently `TEST`, because
+TEST POOL exists as a real `active` branch). Reviews with no branch (universal QR) are kept.
+
+Prompt assembly and all aggregate maths live in `server/analytics.ts`
+(`buildSummaryPrompt` / `summarizeStats`), unit-tested in `analytics.test.ts`. Stats are
+computed server-side and injected into the prompt as fixed facts — the model is instructed not
+to recount. This is deliberate: left to compute from raw rows, the model fabricated counts
+(claimed 88 reviews and 53 bad when 78 rows were sent, 19 of them bad).
+
 ## Installation and local development
 
 ```bash
