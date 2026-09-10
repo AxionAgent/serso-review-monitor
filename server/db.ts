@@ -65,18 +65,14 @@ export async function getUserByOpenId(openId: string) {
 }
 
 export type ScopeUser = Pick<User, "role" | "branchId"> | null | undefined;
-export function isSuperAdmin(user: ScopeUser) {
-  return user?.role === "admin" || user?.role === "super_admin";
-}
 export function scopedBranchId(user: ScopeUser) {
   return user?.role === "branch_admin" ? user.branchId ?? -1 : undefined;
 }
 
 /** V2: status yang disembunyikan dari semua role selain super_admin.
- *  - `archived` : arsip, super_admin only
- *  - `reviewed` : status hantu warisan scaffold lama, tidak dipakai flow V2
+ *  Tambah status baru ke sini kalau perlu disembunyikan — jangan tambah cek di UI.
  */
-const ADMIN_HIDDEN_STATUSES = ["archived", "reviewed"] as const;
+const ADMIN_HIDDEN_STATUSES = ["archived"] as const;
 export function hiddenStatusesFor(user: ScopeUser): Set<string> {
   return user?.role === "super_admin" ? new Set<string>() : new Set<string>(ADMIN_HIDDEN_STATUSES);
 }

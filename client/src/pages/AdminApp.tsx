@@ -113,10 +113,14 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
     ? ["new", "open", "resolved", "archived"]
     : ["new", "open", "resolved"];
   // Bukan super admin: gak bisa archive, gak bisa balik ke new (once resolved)
+  // Cermin aturan server (db.ts::updateReviewStatus). Server = sumber kebenaran:
+  //   invariant semua role : resolved/archived ↛ new
+  //   archived             : super_admin only
+  //   new (bukan no-op)    : super_admin only, dan cuma dari open
   const canSet = (st: "new" | "open" | "resolved" | "archived") => {
-    if (st === "archived" && !canArchive) return false;
-    if (st === "new" && detail.status !== "new") return false;
-    if (!canArchive && st === "new" && detail.status === "new") return true;
+    if (st === "new" && (detail.status === "resolved" || detail.status === "archived")) return false;
+    if (st === "archived") return canArchive;
+    if (st === "new" && !canArchive && detail.status !== "new") return false;
     return true;
   };
   const isLocked = (st: string) => !canSet(st as never);
@@ -405,8 +409,10 @@ function ReviewsPage() {
                         disabled={!canDelete && review.status === "archived"}
                         className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        {/* V2: admin hanya lihat New/Open/Resolved. Archived = super_admin only. */}
-                        <option value="new" disabled={review.status !== "new"}>New</option>
+                        {/* V2: admin hanya lihat New/Open/Resolved. Archived = super_admin only.
+                            New: admin cuma "no-op" (sudah New); super_admin boleh open→new.
+                            Semua role diblokir resolved/archived→new (invariant server). */}
+                        <option value="new" disabled={review.status !== "new" && !(canDelete && review.status === "open")}>New</option>
                         <option value="open">Open</option>
                         <option value="resolved">Resolved</option>
                         {canDelete ? <option value="archived">Archived</option> : null}

@@ -7,10 +7,9 @@ describe("hiddenStatusesFor", () => {
     expect([...hiddenStatusesFor({ role: "super_admin", branchId: null })]).toEqual([]);
   });
 
-  it("admin tidak melihat archived/reviewed", () => {
+  it("admin tidak melihat archived", () => {
     const hidden = hiddenStatusesFor({ role: "admin", branchId: null });
     expect(hidden.has("archived")).toBe(true);
-    expect(hidden.has("reviewed")).toBe(true);
     expect(hidden.has("new")).toBe(false);
     expect(hidden.has("open")).toBe(false);
     expect(hidden.has("resolved")).toBe(false);
@@ -24,9 +23,7 @@ describe("hiddenStatusesFor", () => {
       null,
       undefined,
     ]) {
-      const hidden = hiddenStatusesFor(user);
-      expect(hidden.has("archived")).toBe(true);
-      expect(hidden.has("reviewed")).toBe(true);
+      expect(hiddenStatusesFor(user).has("archived")).toBe(true);
     }
   });
 });

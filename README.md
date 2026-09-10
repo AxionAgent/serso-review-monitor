@@ -56,6 +56,47 @@ The schema lives in `drizzle/schema.ts` and includes:
 
 Indexes cover branch, QR, receipt, created timestamp, status, ratings, alert state, and audit lookups.
 
+## Review lifecycle status
+
+`reviews.status` is a MySQL enum with exactly four values: `new`, `open`, `resolved`, `archived`.
+There is no `reviewed` value — it was a ghost from an early schema revision and was removed
+(migration `drizzle/0007_mixed_zuras.sql`). Do not reintroduce it.
+
+Allowed transitions (enforced in `server/db.ts::updateReviewStatus`, verified empirically):
+
+| Role | From | To | Result |
+| --- | --- | --- | --- |
+| admin | `new` | `open`, `resolved` | allowed |
+| admin | `new` | `archived` | blocked — super admin only |
+| admin | `open` | `resolved` | allowed |
+| admin | `open` | `new` | blocked — admin cannot return to New |
+| admin | `resolved` | `open`, `resolved` | allowed (reopen) |
+| admin | `archived` | anything | invisible — `Review not found` |
+| super_admin | `new` | `open`, `resolved`, `archived` | allowed |
+| super_admin | `open` | `new`, `resolved`, `archived` | allowed |
+| super_admin | `resolved` | `open`, `resolved`, `archived` | allowed (reopen) |
+| super_admin | `archived` | `open`, `resolved`, `archived` | allowed (unarchive) |
+| any | `resolved`, `archived` | `new` | blocked for every role, including super_admin |
+
+The one hard invariant for everyone: a review that reached `resolved` or `archived` can never
+return to `new` (line 438). Everything else above is role-gated. Note super_admin *can* roll
+`open → new` — the only path back to New that exists.
+
+Only `admin` and `super_admin` can log in (`auth.login` checks `ADMIN_PASSWORD` /
+`SUPERADMIN_PASSWORD`; there is no viewer or branch_admin login path). The `viewer` and
+`branch_admin` roles exist in the schema and seed, and every write route calls
+`assertWritable()` which rejects `viewer` — but those roles are currently unreachable from the
+UI, so their behaviour is code-level only.
+
+Archived reviews are excluded from `admin.reviews`, `admin.alerts`, `admin.review` (direct
+`?id=` lookups return `null`), analytics, and KPI counts for every role except `super_admin`.
+The rule lives in one place: `server/db.ts::hiddenStatusesFor` — change it there, not in the UI.
+
+Moving a review to `resolved` captures an optional action note (`reviews.note`). Both the
+review detail modal and the alerts resolve dialog write it. An alert resolve never mutates a
+review that is already outside the `new`/`open` flow, so archived reviews cannot be silently
+reopened.
+
 ## Installation and local development
 
 ```bash
