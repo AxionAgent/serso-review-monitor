@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSummaryPrompt, formatReviewDate, overallRating, summarizeStats, type SummaryReview } from "./analytics";
+import { formatReviewDate, overallRating, renderSummary, summarizeStats, type SummaryReview } from "./analytics";
 
 let receiptSeq = 0;
 const mk = (over: Partial<SummaryReview> & { storeName: string | null; ratings: [number, number, number] }): SummaryReview => ({
@@ -10,7 +10,8 @@ const mk = (over: Partial<SummaryReview> & { storeName: string | null; ratings: 
   groomingRating: over.ratings[1],
   serviceRating: over.ratings[2],
   status: over.status ?? "new",
-  comment: over.comment ?? "ok",
+  // "comment" explicit (termasuk null) harus dihormati; ?? bakal fallback-in null ke "ok"
+  comment: "comment" in over ? (over.comment ?? null) : "ok",
   createdAt: over.createdAt ?? new Date("2026-09-10T10:00:00+07:00"),
 });
 
@@ -108,54 +109,46 @@ describe("overallRating", () => {
   });
 });
 
-describe("buildSummaryPrompt", () => {
+describe("renderSummary", () => {
   const reviews = [
     mk({ storeName: "POOL SINGKAWANG", ratings: [2, 2, 2], comment: "kebersihan kurang", receiptNo: "TIKET-9", status: "new" }),
     mk({ storeName: "PONTIANAK", ratings: [5, 5, 5], comment: "mantap", status: "resolved" }),
   ];
 
-  it("menyisipkan angka fakta yang sudah dihitung agar LLM tidak mengarang", () => {
-    const p = buildSummaryPrompt(reviews);
-    expect(p).toContain("Total 2 review");
-    expect(p).toContain("rata-rata keseluruhan 3.5/5");
-    expect(p).toContain("Pemasangan 3.5, Grooming 3.5, Pelayanan 3.5");
-    expect(p).toContain("Masih belum di-resolve: 1 review.");
+  it("baris kepala: periode, total, rata-rata, aspek, pending", () => {
+    const out = renderSummary(reviews);
+    expect(out).toContain("2 review, rata-rata 3.50/5");
+    expect(out).toContain("Aspek: Pemasangan 3.50 · Grooming 3.50 · Pelayanan 3.50");
+    expect(out).toContain("Belum di-resolve: 1 review · Selesai: 1");
   });
 
-  it("fakta store memuat receipt terendah yang belum selesai + komentarnya", () => {
-    const p = buildSummaryPrompt(reviews);
-    expect(p).toContain("POOL SINGKAWANG");
-    expect(p).toContain("no. receipt TIKET-9");
-    expect(p).toContain("status baru, belum ditangani");
-    expect(p).toContain('komentar: "kebersihan kurang"');
-    // PONTIANAK sudah resolved semua -> tidak ada review belum selesai
-    expect(p).toContain("PONTIANAK: 1 review, rata-rata 5.0/5");
-    expect(p).toContain("tidak ada review yang belum di-resolve");
+  it("store blok: rata2 terendah dulu + receipt terendah belum selesai + komentar", () => {
+    const out = renderSummary(reviews);
+    const lines = out.split("\n");
+    const iSkm = lines.findIndex((l) => l.startsWith("POOL SINGKAWANG"));
+    const iPnk = lines.findIndex((l) => l.startsWith("PONTIANAK"));
+    expect(iSkm).toBeGreaterThan(-1);
+    expect(iPnk).toBeGreaterThan(iSkm); // sorted lowest first
+    expect(lines[iSkm]).toContain("1 review, rata-rata 2.00/5 (1 belum selesai)");
+    expect(out).toContain("Terendah belum selesai: TIKET-9 — 2.00/5");
+    expect(out).toContain('Komentar: "kebersihan kurang"');
+    expect(out).toContain("PONTIANAK — 1 review, rata-rata 5.00/5 (semua sudah di-resolve)");
+    expect(out).not.toContain("mantap"); // komentar resolved tidak ikut tampil
   });
 
-  it("memuat format keluaran + larangan mengarang angka", () => {
-    const p = buildSummaryPrompt(reviews);
-    expect(p).toContain("Bahasa Indonesia santai-profesional");
-    expect(p).toContain("dilarang menghitung atau mengarang angka baru");
-    expect(p).toContain("Dilarang menyebut angka, store, atau receipt");
-    expect(p).toContain("DATA MENTAH:");
+  it("tanpa komentar -> baris Komentar tidak dibuat", () => {
+    const out = renderSummary([mk({ storeName: "A", ratings: [1, 2, 3], comment: null, receiptNo: "T-1" })]);
+    expect(out).not.toContain("Komentar:");
   });
 
-  it("memuat tanggal tiap baris data mentah", () => {
-    const p = buildSummaryPrompt(reviews);
-    expect(p).toContain(formatReviewDate(reviews[0].createdAt));
+  it("aspek seri vs tidak: catatan penutup ikut fakta", () => {
+    expect(renderSummary(reviews)).toContain("rata-rata ketiga aspek setara (3.50/5)");
+    const skew = renderSummary([mk({ storeName: "A", ratings: [1, 5, 5], status: "new" })]);
+    expect(skew).toContain("aspek terendah keseluruhan — Pemasangan (1.00/5)");
   });
 
   it("melempar kalau tidak ada review", () => {
-    expect(() => buildSummaryPrompt([])).toThrow();
-  });
-
-  it("fakta aspek terendah: seri disebut setara, beda disebut nama aspeknya", () => {
-    // kedua review di fixture punya dimensi sama -> "Ketiga aspek rata-ratanya sama"
-    expect(buildSummaryPrompt(reviews)).toContain("Ketiga aspek rata-ratanya sama (3.5/5).");
-    // fixture miring: Pemasangan sendiri yang terendah
-    const pSkew = buildSummaryPrompt([mk({ storeName: "A", ratings: [1, 5, 5], status: "new" })]);
-    expect(pSkew).toContain("Aspek terendah keseluruhan: Pemasangan (1.0/5).");
+    expect(() => renderSummary([])).toThrow();
   });
 });
 

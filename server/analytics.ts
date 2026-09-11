@@ -45,7 +45,9 @@ export type SummaryStats = {
 
 const DIMS = ["Pemasangan", "Grooming", "Pelayanan"] as const;
 const mean = (ns: number[]) => (ns.length ? ns.reduce((a, b) => a + b, 0) / ns.length : 0);
-const f1 = (n: number) => n.toFixed(1);
+// rata-rata pakai 2 desimal: dengan 1 desimal ketiga aspek bisa tampil "4.0" semua
+// padahal aslinya 3,95 vs 4,02 — catatan "terendah" jadi kelihatan ngawur.
+const f2 = (n: number) => n.toFixed(2);
 const STATUS_LABEL: Record<string, string> = {
   new: "baru, belum ditangani",
   open: "dalam penanganan",
@@ -124,52 +126,47 @@ export function summarizeStats(reviews: SummaryReview[]): SummaryStats {
   };
 }
 
-const dimLine = (d: Dimensions) => `Pemasangan ${f1(d["Pemasangan"])}, Grooming ${f1(d.Grooming)}, Pelayanan ${f1(d.Pelayanan)}`;
+const dimLine = (d: Dimensions) => `Pemasangan ${f2(d["Pemasangan"])} · Grooming ${f2(d.Grooming)} · Pelayanan ${f2(d.Pelayanan)}`;
 
-export function buildSummaryPrompt(reviews: SummaryReview[]): string {
-  if (!reviews.length) throw new Error("buildSummaryPrompt: tidak ada review");
+const periodOf = (reviews: SummaryReview[]) =>
+  `${formatReviewDate(reviews[reviews.length - 1].createdAt)} - ${formatReviewDate(reviews[0].createdAt)}`;
+
+/** Aspek terendah; seri (selisih < batas pembulatan) disebut setara — jangan ngarang. */
+export function worstAspectLine(s: SummaryStats): string {
+  const entries = Object.entries(s.dimensions) as [keyof Dimensions, number][];
+  const vals = entries.map(([, v]) => v);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  if (max - min < 0.005) return `Catatan: rata-rata ketiga aspek setara (${f2(min)}/5).`;
+  const worst = entries.filter(([, v]) => v === min).map(([k]) => k);
+  return `Catatan: aspek terendah keseluruhan — ${worst.join(" dan ")} (${f2(min)}/5).`;
+}
+
+/**
+ * Render ringkasan final. Deterministic by design: earlier versions let the LLM
+ * assemble the text and the layout came out as an unreadable wall of run-on
+ * sentences. All numbers already come from summarizeStats — nothing to phrase.
+ */
+export function renderSummary(reviews: SummaryReview[]): string {
+  if (!reviews.length) throw new Error("renderSummary: tidak ada review");
   const s = summarizeStats(reviews);
-  const period = `${formatReviewDate(reviews[reviews.length - 1].createdAt)} - ${formatReviewDate(reviews[0].createdAt)}`;
-  const dimEntries = Object.entries(s.dimensions) as [keyof Dimensions, number][];
-  const dimMin = Math.min(...dimEntries.map(([, v]) => v));
-  const worstDims = dimEntries.filter(([, v]) => v === dimMin).map(([k]) => k);
-  const worstFact =
-    worstDims.length === 3
-      ? `Ketiga aspek rata-ratanya sama (${f1(s.average)}/5).`
-      : `Aspek terendah keseluruhan: ${worstDims.join(" dan ")} (${f1(dimMin)}/5).`;
-  const storeFacts = s.stores.map((st) => {
-    const head = `- ${st.name}: ${st.n} review, rata-rata ${f1(st.average)}/5 (${dimLine(st.dimensions)})`;
-    if (!st.lowest) return `${head}; tidak ada review yang belum di-resolve`;
+  const lines: string[] = [
+    `Periode ${periodOf(reviews)} — ${s.total} review, rata-rata ${f2(s.average)}/5`,
+    `Aspek: ${dimLine(s.dimensions)}`,
+    `Belum di-resolve: ${s.pending} review${s.total - s.pending ? ` · Selesai: ${s.total - s.pending}` : ""}`,
+    "",
+  ];
+  for (const st of s.stores) {
+    const tail = st.pending ? `${st.pending} belum selesai` : "semua sudah di-resolve";
+    lines.push(`${st.name} — ${st.n} review, rata-rata ${f2(st.average)}/5 (${tail})`);
     const l = st.lowest;
-    const comment = l.comment ? `, komentar: "${l.comment}"` : "";
-    return (
-      `${head}; review terendah yang belum selesai: no. receipt ${l.receiptNo} (${f1(l.overall)}/5, ${l.date}) — ` +
-      `Pemasangan ${l.dims["Pemasangan"]}, Grooming ${l.dims.Grooming}, Pelayanan ${l.dims.Pelayanan}, ` +
-      `status ${l.statusLabel}${comment}`
-    );
-  });
-  return [
-    "Kamu meringkas review kualitas layanan (rating 1-5: Pemasangan=Gym Equipment, Grooming=Room Facilities, Pelayanan=Employee Service).",
-    "",
-    `ANGKA FAKTA periode ${period} — gunakan PERSIS, dilarang menghitung atau mengarang angka baru:`,
-    `- Total ${s.total} review, rata-rata keseluruhan ${f1(s.average)}/5. Per aspek: ${dimLine(s.dimensions)}.`,
-    `- Masih belum di-resolve: ${s.pending} review.`,
-    worstFact,
-    ...storeFacts,
-    "",
-    "Tulis ringkasan HANYA dari fakta di atas, format persis seperti ini:",
-    "1. Baris 1: \"Dalam periode {period}, {total} review masuk dengan rata-rata {average}/5 (Pemasangan x, Grooming y, Pelayanan z).\" — angka dari FAKTA.",
-    "2. Baris 2: kalau ada yang belum di-resolve: \"{pending} review masih belum diselesaikan.\" kalau nol: \"Semua review periode ini sudah di-resolve.\"",
-    "3. Lanjut satu baris per store, urut rata-rata terendah: \"{store} rata-rata {avg}/5\" — kalau ada review terendah belum selesai tambah \"; terendah di no. receipt {receiptNo} ({overall}/5, {date}): Pemasangan {i}, Grooming {g}, Pelayanan {s}, status {statusLabel}\" dan kutip komentarnya kalau ada.",
-    "4. Kalimat penutup ≤1 baris: sebut aspek terendah sesuai baris FAKTA 'Aspek terendah keseluruhan' (kalau ketiganya sama, sebut rata-rata ketiganya setara) dan perlu perhatian.",
-    "",
-    "Aturan keras:",
-    "- Bahasa Indonesia santai-profesional, maksimal 160 kata, TANPA tabel/heading markdown/bullet bersarang.",
-    "- Dilarang menyebut angka, store, atau receipt yang tidak ada di FAKTA. Jangan menerawang penyebab/solusi.",
-    "- Jangan gunakan data mentah di bawah ini untuk menghitung ulang — hanya untuk memilih kutipan komentar bila perlu.",
-    "",
-    "DATA MENTAH:",
-    ...reviews.map((r) =>
-      `${formatReviewDate(r.createdAt)} | ${r.storeName ?? "?"} | P:${r.installationRating} G:${r.groomingRating} S:${r.serviceRating} | ${r.status} | ${r.comment ?? ""}`),
-  ].join("\n");
+    if (l) {
+      lines.push(`  Terendah belum selesai: ${l.receiptNo} — ${f2(l.overall)}/5, ${l.date}, ${l.statusLabel}`);
+      lines.push(`    Pemasangan ${l.dims["Pemasangan"]} · Grooming ${l.dims.Grooming} · Pelayanan ${l.dims.Pelayanan}`);
+      if (l.comment) lines.push(`    Komentar: "${l.comment}"`);
+    }
+    lines.push("");
+  }
+  lines.push(worstAspectLine(s));
+  return lines.join("\n").trimEnd();
 }

@@ -34,7 +34,7 @@ import {
   assignReview,
   getAllNonArchivedReviews,
 } from "./db";
-import { buildSummaryPrompt } from "./analytics";
+import { renderSummary } from "./analytics";
 import { settings as settingsTable } from "../drizzle/schema";
 
 const statusSchema = z.enum(["new", "open", "resolved", "archived"]);
@@ -191,30 +191,9 @@ export const appRouter = router({
     // V2: window 7 hari terakhir + buang branch uji. Lihat db.ts::getAllNonArchivedReviews.
     const reviews = await getAllNonArchivedReviews(ctx.user, 7);
     if (!reviews.length) return { summary: "Tidak ada review dalam 7 hari terakhir untuk dianalisis.", generatedAt: new Date().toISOString() };
-    // Statistik dihitung server-side di analytics.ts — LLM terbukti salah hitung dari data mentah.
-    const prompt = buildSummaryPrompt(reviews);
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30_000);
-      const res = await fetch("http://168.110.194.241:20128/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer sk-d15384f5e8af0ec9-f97uvn-6795aad9" },
-        body: JSON.stringify({ model: "serso-review", stream: false, messages: [{ role: "user", content: prompt }], max_tokens: 1000, temperature: 0.4 }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error(`LLM ${res.status}`);
-      const raw = await res.text();
-      // ponytail: upstream kadang balas SSE walau stream:false — ambil objek JSON pertama sebelum "data: [DONE]"
-      const firstJson = raw.indexOf("{");
-      const lastJson = raw.lastIndexOf("}");
-      const body = JSON.parse(firstJson >= 0 && lastJson > firstJson ? raw.slice(firstJson, lastJson + 1) : raw) as { choices?: { message?: { content?: string } }[] };
-      const summary = body.choices?.[0]?.message?.content?.trim() ?? "Gagal menghasilkan ringkasan.";
-      return { summary, generatedAt: new Date().toISOString() };
-    } catch (error) {
-      const message = error instanceof Error && error.name === "AbortError" ? "Waktu analisis habis (30 detik)." : error instanceof Error ? error.message : String(error);
-      return { summary: `AI summarizer gagal: ${message}`, generatedAt: new Date().toISOString() };
-    }
+    // Deterministic: dulu lewat LLM, hasilnya layout berantakan + risiko angka ngarang.
+    // Semua fakta sudah dihitung server-side di analytics.ts — tinggal render.
+    return { summary: renderSummary(reviews), generatedAt: new Date().toISOString() };
   }),
   alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),
     resolveAlert: protectedProcedure

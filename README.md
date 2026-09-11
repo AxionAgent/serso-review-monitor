@@ -125,27 +125,29 @@ review detail modal and the alerts resolve dialog write it. An alert resolve nev
 review that is already outside the `new`/`open` flow, so archived reviews cannot be silently
 reopened.
 
-## AI Summarize
+## Analytics Summary
 
-`admin.analyticsSummarize` builds a prompt from the last **7 days** of reviews via
-`db.ts::getAllNonArchivedReviews(user, 7)`. Excluded: `archived` reviews, `inactive` branches,
-and the branch codes listed in `ANALYTICS_EXCLUDED_BRANCH_CODES` (currently `TEST`, because
-TEST POOL exists as a real `active` branch). Reviews with no branch (universal QR) are kept.
+`admin.analyticsSummarize` returns a **deterministic, server-rendered** digest built from the
+last **7 days** of reviews via `db.ts::getAllNonArchivedReviews(user, 7)`. Excluded: `archived`
+reviews, `inactive` branches, and the branch codes listed in
+`ANALYTICS_EXCLUDED_BRANCH_CODES` (currently `TEST`, because TEST POOL exists as a real
+`active` branch). Reviews with no branch (universal QR) are kept.
 
-Prompt assembly and all aggregate maths live in `server/analytics.ts`
-(`buildSummaryPrompt` / `summarizeStats`), unit-tested in `analytics.test.ts`. Stats are
-computed server-side and injected into the prompt as fixed facts — the model is instructed not
-to recount. This is deliberate: left to compute from raw rows, the model fabricated counts
-(claimed 88 reviews and 53 bad when 78 rows were sent, 19 of them bad).
+All maths and the final text live in `server/analytics.ts` (`summarizeStats` /
+`renderSummary`), unit-tested in `analytics.test.ts`. The endpoint answers instantly and
+cannot fabricate a number.
 
-Output shape (v2, per owner request — plain lines, no markdown tables): first line gives the
-period, overall average, and per-aspect averages; second line gives the count of still
-unresolved reviews; then one line per store sorted by lowest average, each naming the
-*lowest-rated review that is not yet resolved* (receipt number, per-aspect ratings, date,
-status label, quoted comment if present); finally one closing line about the weakest aspect.
-"Lowest" ignores resolved reviews by design — resolved means no longer a problem. The
-weakest-aspect sentence is computed server-side and injected as a fact (all-equal dimensions
-are reported as equal, not hallucinated).
+Layout (owner-approved): header block (period, totals, per-aspect averages, pending/resolved
+counts), then one block per store sorted by lowest average — each naming the *lowest-rated
+review that is not yet resolved* (receipt number, per-aspect scores, date, status label, and
+its comment when present) — then a closing note on the weakest aspect (ties are reported as
+ties, never guessed). "Lowest" ignores resolved reviews by design — resolved means no longer
+a problem.
+
+> History: v1 sent raw rows to an LLM (9router) — it fabricated counts (claimed 88 reviews,
+> 53 bad, from 78 rows / 19 bad). v2 computed stats server-side but still let the LLM phrase
+> the output — layout came out as an unreadable run-on wall. v3 (current): the model was cut
+> out of the loop entirely; `renderSummary` produces the text itself.
 
 ## Installation and local development
 
