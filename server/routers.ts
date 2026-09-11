@@ -187,12 +187,12 @@ export const appRouter = router({
     deleteReview: superAdminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteReview(ctx.user, input.id, ctx.user.id)),
     deleteAllReviews: superAdminProcedure.mutation(({ ctx }) => deleteAllReviews(ctx.user.id)),
   deleteArchivedReviews: superAdminProcedure.mutation(({ ctx }) => deleteArchivedReviews(ctx.user.id)),
-  analyticsSummarize: protectedProcedure.mutation(async ({ ctx }) => {
+  analyticsRecap: protectedProcedure.query(async ({ ctx }) => {
     // V2: window 7 hari terakhir + buang branch uji. Lihat db.ts::getAllNonArchivedReviews.
     const reviews = await getAllNonArchivedReviews(ctx.user, 7);
     if (!reviews.length) return { summary: "Tidak ada review dalam 7 hari terakhir untuk dianalisis.", generatedAt: new Date().toISOString() };
-    // Deterministic: dulu lewat LLM, hasilnya layout berantakan + risiko angka ngarang.
-    // Semua fakta sudah dihitung server-side di analytics.ts — tinggal render.
+    // Deterministic: dulu mutation + LLM, hasilnya layout berantakan + risiko angka ngarang.
+    // Semua fakta sudah dihitung server-side di analytics.ts — tinggal render, otomatis instan.
     return { summary: renderSummary(reviews), generatedAt: new Date().toISOString() };
   }),
   alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),

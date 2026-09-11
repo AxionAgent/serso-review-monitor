@@ -2,7 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Bell, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, FileImage, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, X } from "lucide-react";
+import { Bell, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, FileImage, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, RefreshCw, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -790,41 +790,31 @@ function QRCodesPage() {
 
 function AnalyticsPage() {
   const { data, isLoading } = trpc.dashboard.overview.useQuery({});
-  const summarize = trpc.admin.analyticsSummarize.useMutation();
-  const [summary, setSummary] = useState<string>("");
-  const [summaryError, setSummaryError] = useState<string>("");
+  // Ringkasan 7 hari dirender server-side secara deterministik & instan -> query biasa,
+  // auto-load bareng halaman. Dulu mutation + tombol "AI Summarize"; LLM-nya sudah dibuang.
+  const recap = trpc.admin.analyticsRecap.useQuery(undefined, { staleTime: 60_000 });
 
   if (isLoading || !data) return <Loading />;
 
   const storeRows = [...(data.storeAnalytics ?? [])].sort((a, b) => b.reviews - a.reviews);
-  const runSummarize = () => {
-    setSummaryError("");
-    setSummary("");
-    summarize.mutate(undefined, {
-      onSuccess: (res) => setSummary(res.summary),
-      onError: (err) => setSummaryError(err.message),
-    });
-  };
   return (
     <div className="space-y-7">
-      <PageHeading eyebrow="Performance intelligence" title="Analytics & Leaderboard" subtitle={`Performa setiap store berdasarkan jumlah review dan rerata rating (threshold ${Number(data.threshold).toFixed(1)}).`} action={<button onClick={runSummarize} disabled={summarize.isPending} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2f6fed] px-4 text-sm font-bold text-white shadow-lg shadow-[#2f6fed]/15 transition hover:bg-[#2459c7] disabled:opacity-50"><Sparkles className="h-4 w-4" /> {summarize.isPending ? "Menyusun ringkasan…" : "AI Summarize"}</button>} />
-      {summary || summaryError || summarize.isPending ? (
-        <div className="rounded-2xl border border-[#dbe7ff] bg-[#f6f9ff] p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
-          <div className="mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#2f6fed]" />
-            <p className="text-sm font-bold text-slate-900">AI Recommendation</p>
-          </div>
-          {summarize.isPending ? (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin text-[#2f6fed]" /> Menganalisis semua komentar & rating…
-            </div>
-          ) : summaryError ? (
-            <p className="text-sm text-rose-600">Gagal: {summaryError}</p>
-          ) : (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{summary}</p>
-          )}
+      <PageHeading eyebrow="Performance intelligence" title="Analytics & Leaderboard" subtitle={`Performa setiap store berdasarkan jumlah review dan rerata rating (threshold ${Number(data.threshold).toFixed(1)}).`} action={<button onClick={() => recap.refetch()} disabled={recap.isFetching} className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#dbe7ff] bg-white/80 px-4 text-sm font-bold text-[#0f2f5f] transition hover:bg-[#f6f9ff] disabled:opacity-60"><RefreshCw className={recap.isFetching ? "h-4 w-4 animate-spin text-[#2f6fed]" : "h-4 w-4 text-[#2f6fed]"} /> Refresh</button>} />
+      <div className="rounded-2xl border border-[#dbe7ff] bg-[#f6f9ff] p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <FileText className="h-4 w-4 text-[#2f6fed]" />
+          <p className="text-sm font-bold text-slate-900">Rekap Review (7 hari terakhir)</p>
         </div>
-      ) : null}
+        {recap.isError ? (
+          <p className="text-sm text-rose-600">Gagal memuat rekap: {recap.error.message}</p>
+        ) : recap.isFetching && !recap.data ? (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin text-[#2f6fed]" /> Memuat rekap…
+          </div>
+        ) : (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{recap.data?.summary}</p>
+        )}
+      </div>
       <div className="grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
         <div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
           <div className="mb-6 flex items-center justify-between">

@@ -127,15 +127,15 @@ reopened.
 
 ## Analytics Summary
 
-`admin.analyticsSummarize` returns a **deterministic, server-rendered** digest built from the
-last **7 days** of reviews via `db.ts::getAllNonArchivedReviews(user, 7)`. Excluded: `archived`
+`admin.analyticsRecap` is a plain query that returns a **deterministic, server-rendered**
+digest built from the last **7 days** of reviews via `db.ts::getAllNonArchivedReviews(user, 7)`. Excluded: `archived`
 reviews, `inactive` branches, and the branch codes listed in
 `ANALYTICS_EXCLUDED_BRANCH_CODES` (currently `TEST`, because TEST POOL exists as a real
 `active` branch). Reviews with no branch (universal QR) are kept.
 
 All maths and the final text live in `server/analytics.ts` (`summarizeStats` /
-`renderSummary`), unit-tested in `analytics.test.ts`. The endpoint answers instantly and
-cannot fabricate a number.
+`renderSummary`), unit-tested in `analytics.test.ts`. The Analytics page loads it automatically —
+no button press needed, and it cannot fabricate a number.
 
 Layout (owner-approved): header block (period, totals, per-aspect averages, pending/resolved
 counts), then one block per store sorted by lowest average — each naming the *lowest-rated
