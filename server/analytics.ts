@@ -126,47 +126,28 @@ export function summarizeStats(reviews: SummaryReview[]): SummaryStats {
   };
 }
 
-const dimLine = (d: Dimensions) => `Pemasangan ${f2(d["Pemasangan"])} · Grooming ${f2(d.Grooming)} · Pelayanan ${f2(d.Pelayanan)}`;
-
 const periodOf = (reviews: SummaryReview[]) =>
   `${formatReviewDate(reviews[reviews.length - 1].createdAt)} - ${formatReviewDate(reviews[0].createdAt)}`;
 
-/** Aspek terendah; seri (selisih < batas pembulatan) disebut setara — jangan ngarang. */
-export function worstAspectLine(s: SummaryStats): string {
-  const entries = Object.entries(s.dimensions) as [keyof Dimensions, number][];
-  const vals = entries.map(([, v]) => v);
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  if (max - min < 0.005) return `Catatan: rata-rata ketiga aspek setara (${f2(min)}/5).`;
-  const worst = entries.filter(([, v]) => v === min).map(([k]) => k);
-  return `Catatan: aspek terendah keseluruhan — ${worst.join(" dan ")} (${f2(min)}/5).`;
-}
-
 /**
- * Render ringkasan final. Deterministic by design: earlier versions let the LLM
- * assemble the text and the layout came out as an unreadable wall of run-on
- * sentences. All numbers already come from summarizeStats — nothing to phrase.
+ * Render ringkasan final. Deterministic by design (LLM dulu salah hitung angka).
+ * Format sederhana per owner: total + tertinggi / terendah / rata-rata, lalu
+ * satu baris ringkas per store. Detail receipt/komentar/dimensi sengaja dibuang.
  */
 export function renderSummary(reviews: SummaryReview[]): string {
   if (!reviews.length) throw new Error("renderSummary: tidak ada review");
   const s = summarizeStats(reviews);
-  const lines: string[] = [
-    `Periode ${periodOf(reviews)} — ${s.total} review, rata-rata ${f2(s.average)}/5`,
-    `Aspek: ${dimLine(s.dimensions)}`,
-    `Belum di-resolve: ${s.pending} review${s.total - s.pending ? ` · Selesai: ${s.total - s.pending}` : ""}`,
+  const storeOf = (r: SummaryReview) => r.storeName ?? r.storeCode ?? "?";
+  // Seri -> review terbaru menang (input tersortir newest-first, reduce ambil yang pertama).
+  const best = reviews.reduce((a, b) => (overallRating(b) > overallRating(a) ? b : a));
+  const worst = reviews.reduce((a, b) => (overallRating(b) < overallRating(a) ? b : a));
+  const lines = [
+    `Periode ${periodOf(reviews)} — ${s.total} review`,
+    `Tertinggi: ${f2(overallRating(best))}/5 — ${storeOf(best)}, ${best.receiptNo}`,
+    `Terendah: ${f2(overallRating(worst))}/5 — ${storeOf(worst)}, ${worst.receiptNo}`,
+    `Rata-rata: ${f2(s.average)}/5 · Belum di-resolve: ${s.pending}`,
     "",
+    ...s.stores.map((st) => `${st.name} — ${st.n} review, rata-rata ${f2(st.average)}/5`),
   ];
-  for (const st of s.stores) {
-    const tail = st.pending ? `${st.pending} belum selesai` : "semua sudah di-resolve";
-    lines.push(`${st.name} — ${st.n} review, rata-rata ${f2(st.average)}/5 (${tail})`);
-    const l = st.lowest;
-    if (l) {
-      lines.push(`  Terendah belum selesai: ${l.receiptNo} — ${f2(l.overall)}/5, ${l.date}, ${l.statusLabel}`);
-      lines.push(`    Pemasangan ${l.dims["Pemasangan"]} · Grooming ${l.dims.Grooming} · Pelayanan ${l.dims.Pelayanan}`);
-      if (l.comment) lines.push(`    Komentar: "${l.comment}"`);
-    }
-    lines.push("");
-  }
-  lines.push(worstAspectLine(s));
-  return lines.join("\n").trimEnd();
+  return lines.join("\n");
 }

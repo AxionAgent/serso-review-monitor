@@ -822,13 +822,13 @@ function AnalyticsPage() {
       <div className="rounded-2xl border border-[#dbe7ff] bg-[#f6f9ff] p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
         <div className="mb-3 flex items-center gap-2">
           <FileText className="h-4 w-4 text-[#2f6fed]" />
-          <p className="text-sm font-bold text-slate-900">Rekap Review (7 hari terakhir)</p>
+          <p className="text-sm font-bold text-slate-900">Summary Review (7 hari terakhir)</p>
         </div>
         {recap.isError ? (
-          <p className="text-sm text-rose-600">Gagal memuat rekap: {recap.error.message}</p>
+          <p className="text-sm text-rose-600">Gagal memuat summary: {recap.error.message}</p>
         ) : recap.isFetching && !recap.data ? (
           <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin text-[#2f6fed]" /> Memuat rekap…
+            <Loader2 className="h-4 w-4 animate-spin text-[#2f6fed]" /> Memuat summary…
           </div>
         ) : (
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{recap.data?.summary}</p>
