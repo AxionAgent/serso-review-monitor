@@ -1,58 +1,86 @@
 # Customer Review & Service Quality Management
 
-A production-oriented internal web application for converting QR-scanned customer feedback into structured operational data. Customers scan a branch QR code, submit a mobile-first review without selecting a branch, and the backend associates the submission with the branch and QR source. Staff use the workspace to monitor ratings, resolve alerts, compare branches and teams, and export review data.
+Live deployment: **https://reviewv2.kemscloud.web.id** (this is the primary instance; the older
+`review.kemscloud.web.id` runs the same code against a separate database).
 
 ## Product overview
 
 The application replaces the spreadsheet workflow:
 
-> Customer → Scan Branch QR → Review Form → Backend → Database → Admin Workspace → Analytics
+> Customer → Scan QR → Review Form → Backend → Database → Admin Workspace → Analytics
 
-The server resolves the QR identifier to the active branch and QR record. The browser never submits a trusted `branchId`; the public mutation receives only the QR code and review fields, then looks up the branch server-side. Disabled QR codes and inactive branches are rejected before the form can be submitted.
+There is one all-in-one QR (`/r/UNIVERSAL`) whose `branchId` is `NULL`. The customer never picks
+a branch: the review is stored unassigned and an admin assigns the store afterwards (the store
+column is inline-editable). Per-branch QR codes (`/r/SGK`, `/r/PTK`, `/r/KTP`) are still
+supported — the browser never submits a trusted `branchId`; the server resolves the QR code to
+its branch. Disabled QR codes and inactive branches are rejected before submission. Unrecognized
+receipt numbers display as `Unknown` in the store column.
 
 ## Technology
 
 - React 19 + TypeScript + Vite
-- Blue/white gradient surfaces with glassmorphism panels
-- Tailwind CSS 4 with a custom teal / leaf visual system
+- Tailwind CSS 4 with a custom teal / leaf visual system, glassmorphism panels
 - Express + tRPC 11 for typed server procedures
-- Drizzle ORM + MySQL/TiDB
-- Signed local session cookie for authenticated workspace access
+- Drizzle ORM + MySQL 8.4 (Docker volume; TiDB-compatible migrations retained from the original
+  WebDev scaffold)
+- Signed local session cookie (`app_session_id`, 1-year maxAge) for authenticated workspace access
 - Recharts for analytics
 - `qrcode.react` for real SVG QR codes
-- Vitest-ready project structure
+- `xlsx` for the export button — **dynamically imported** so it stays out of the initial chunk
+- Vitest suite: `pnpm test` (21 tests in `server/analytics.test.ts`, `auth.logout.test.ts`,
+  `status-visibility.test.ts`, `store.test.ts`)
 
-The managed project uses the WebDev `web-db-user` scaffold, with OAuth callback registration disabled for this deployment. Authentication uses a signed local session cookie and the development credential pair `admin:admin`; role fixtures are seeded in the database and the live authenticated user's role is enforced by backend procedures.
+Authentication uses a signed local session cookie. OAuth registration is disabled for this
+deployment.
+
+## Deployment topology (docker compose)
+
+| Service | Host port | DB | Public URL |
+| --- | --- | --- | --- |
+| `app` | 9311 | `serso` (db) | review.kemscloud.web.id |
+| `app-full-v2` | 9313 | `serso_v2` (db-v2) | reviewv2.kemscloud.web.id |
+
+Both app services run the **same** image (`Dockerfile` → `node dist/index.js`, the full React
+app). Caddy terminates TLS and reverse-proxies each subdomain to its port; Cloudflare sits in
+front of Caddy. Env vars come from `.env` (`MYSQL_*` for v1, `MYSQL_*_V2` / `JWT_SECRET_V2` /
+`ADMIN_PASSWORD_V2` / `PORT_FULL_V2=9313` for reviewv2).
+
+> ⚠️ `server/v2/server.ts` (+ `server/v2/public/*.html`) is a legacy standalone vanilla-admin
+> experiment. It is **dead code** — the Dockerfile builds `dist/v2/server.js` but no running
+> service uses it. All live admin traffic goes to the React `AdminApp.tsx` via `serveStatic`.
 
 ## Main routes
 
 | Route | Purpose |
 | --- | --- |
 | `/` | Branded entry page with links to the workspace and demo QR routes |
-| `/r/SGK` | Public Singkawang review form |
-| `/r/PTK` | Public Pontianak review form |
-| `/r/KTP` | Public Ketapang review form |
-| `/admin` | Live KPI overview, trend chart, rating distribution, recent reviews, and alert summary |
-| `/admin/reviews` | Searchable review table, status workflow, and CSV export |
+| `/r/UNIVERSAL` | Public review form — one all-in-one QR, no branch selector |
+| `/r/SGK` `/r/PTK` `/r/KTP` | Branch-bound review forms (legacy style, still resolved server-side) |
+| `/admin` | Login gate, then live KPI overview, trend chart, rating distribution, recent reviews, alerts |
+| `/admin/reviews` | Searchable review table, status workflow, store/team inline edit, XLSX/ODS/CSV export, delete |
 | `/admin/alerts` | Negative-review alert queue and resolve action |
-| `/admin/branches` | Branch listing, create, activate/deactivate |
-| `/admin/teams` | Installation team listing and create flow |
 | `/admin/qr-codes` | QR generation, SVG download, preview, activation, and disable flow |
-| `/admin/analytics` | Branch, team, QR, and dimension analytics |
-| `/admin/settings` | Persisted customer-facing settings and negative threshold |
+| `/admin/analytics` | Branch, team, QR, and dimension analytics + AI Summarize |
+| `/admin/settings` | Persisted customer-facing settings, branches (create/activate/deactivate), negative threshold |
+
+There is no `/admin/teams` page — teams are only listed on a review (the `teams` table is used by
+`getBranchActiveTeams`, not managed from the UI).
 
 ## Database model
 
-The schema lives in `drizzle/schema.ts` and includes:
+The schema lives in `drizzle/schema.ts`. Tables: `users`, `branches`, `teams`, `qr_codes`,
+`reviews`, `review_alerts`, `audit_logs`, `settings`. Key shapes:
 
-- `users` with role, branch scope, and status
-- `branches` with unique branch code and active/inactive state
-- `teams` scoped to a branch
-- `qr_codes` with unique code, URL, status, and creator
-- `reviews` with branch, QR, optional team, receipt, three ratings, comment, and lifecycle status
-- `review_alerts` for automatically detected low ratings
-- `audit_logs` for administrative actions
-- `settings` for company name, customer page copy, negative threshold, timezone, and branding
+- `users` — `openId` unique, `email`, `role` enum (`user`/`admin`/`super_admin`/`branch_admin`/
+  `viewer`), `branchId` scope, `status`
+- `branches` — unique `code`, `status` enum `active`/`inactive`. Live rows in `serso_v2`:
+  `POOLSKW` (POOL SINGKAWANG), `TEST` (TEST POOL), `PNK` (PONTIANAK)
+- `qr_codes` — unique `code`, `url`, `status`; `branchId NULL` = universal QR. Live:
+  `REVIEW` → `/r/UNIVERSAL`
+- `reviews` — `branchId` nullable (universal QR reviews start unassigned), `receiptNo`, three
+  ratings, `comment`, `status` enum, `note` text (captured on resolve)
+- `review_alerts` — auto-created when any rating ≤ configured negative threshold
+- `settings` — company name, customer page copy, negative threshold, timezone, branding
 
 Indexes cover branch, QR, receipt, created timestamp, status, ratings, alert state, and audit lookups.
 
@@ -79,10 +107,10 @@ Allowed transitions (enforced in `server/db.ts::updateReviewStatus`, verified em
 | any | `resolved`, `archived` | `new` | blocked for every role, including super_admin |
 
 The one hard invariant for everyone: a review that reached `resolved` or `archived` can never
-return to `new` (line 438). Everything else above is role-gated. Note super_admin *can* roll
-`open → new` — the only path back to New that exists.
+return to `new`. Everything else above is role-gated. Note super_admin *can* roll `open → new` —
+the only path back to New that exists.
 
-Only `admin` and `super_admin` can log in (`auth.login` checks `ADMIN_PASSWORD` /
+Only `admin` and `superadmin` can log in (`auth.login` checks `ADMIN_PASSWORD` /
 `SUPERADMIN_PASSWORD`; there is no viewer or branch_admin login path). The `viewer` and
 `branch_admin` roles exist in the schema and seed, and every write route calls
 `assertWritable()` which rejects `viewer` — but those roles are currently unreachable from the
@@ -114,91 +142,110 @@ to recount. This is deliberate: left to compute from raw rows, the model fabrica
 
 ```bash
 pnpm install
-cp .env.example .env # if using a local environment file
-pnpm drizzle-kit generate
-pnpm check
+# no .env.example in repo — create .env (gitignored) with MYSQL_* + *_V2 keys,
+# see docker-compose.yml for the variable names
+pnpm db:push           # drizzle-kit generate && migrate
+pnpm check && pnpm test
 pnpm dev
 ```
 
-Required runtime variables are provided by the managed environment. The relevant variables include `DATABASE_URL`, `JWT_SECRET`, and the built-in API variables documented in `server/_core/env.ts`. Do not commit secrets or local `.env` files.
+Required runtime variables: `DATABASE_URL` (mysql://…), `JWT_SECRET`, `ADMIN_USERNAME`,
+`ADMIN_PASSWORD`, `SUPERADMIN_PASSWORD`. Do not commit secrets or local `.env` files.
 
-For a local database, apply the generated SQL using the project's normal Drizzle migration process. The managed environment already has the schema applied. The first migration was adjusted for TiDB compatibility so `settings.thankYouMessage` uses a bounded `varchar(500)` instead of a text default.
+The first migration was adjusted for TiDB compatibility so `settings.thankYouMessage` uses a
+bounded `varchar(500)` instead of a text default.
 
 ## Seed data
 
-The idempotent seed script is `server/seed.ts`:
+The idempotent seed script is `server/seed.ts` (`pnpm exec tsx server/seed.ts`). It targets
+`SEED_REVIEW_COUNT = 120` reviews, top-up only — if the table already has ≥120 rows it prints
+`Seed skipped` and does nothing. It creates:
 
-```bash
-pnpm exec tsx server/seed.ts
-```
-
-It creates:
-
-- Singkawang, Pontianak, and Ketapang branches
-- Six installation teams across the branches
-- Five working QR codes, including `/r/SGK`, `/r/PTK`, and `/r/KTP`
-- 120 reviews distributed over the previous 90 days
-- Different ratings, statuses, comments, teams, and QR sources
+- Singkawang, Pontianak, and Ketapang branches **only if the branch table is empty** (real
+  deployments keep their own branches; live v2 rows are POOLSKW/TEST/PNK)
+- The universal QR (`/r/UNIVERSAL`, `branchId NULL`) if absent; per-branch QRs when present
+- Reviews distributed over the previous 90 days with varied ratings, statuses, comments, and QR
+  sources (the current UI does not expose team assignment; the seed predates that change)
 - Low-rating alerts generated from seeded reviews
-- Three role fixtures in `users`
+- Role fixture users (`admin@example.com`, `singkawang@example.com`, `viewer@example.com`)
 
-The dashboard uses live database aggregation from these rows; KPI values are not hardcoded.
+The dashboard uses live database aggregation; KPI values are never hardcoded.
 
 ## Demo accounts and authentication
 
-The seed script creates role fixtures with these development identifiers:
+| Role | Username | Development password |
+| --- | --- | --- |
+| Admin | `admin` | `admin` (env `ADMIN_PASSWORD`; compose default `admin`) |
+| Super admin | `superadmin` | `super123` (env `SUPERADMIN_PASSWORD`; code fallback `super1234`) |
 
-| Role | Email fixture |
-| --- | --- |
-| Super admin / admin | `admin@example.com` |
-| Singkawang branch admin | `singkawang@example.com` |
-| Viewer | `viewer@example.com` |
-
-OAuth is disabled in this deployment. Use the local admin form with `admin:admin` for workspace administration or `superadmin:super123` for destructive super-admin operations. The server validates these credentials, creates or reuses the seeded admin role, and issues the signed `app_session_id` cookie. Replace the hardcoded development credential check with a secret-backed credential or an enterprise identity provider before production use.
+The server validates these credentials, creates or reuses the seeded role, and issues the signed
+`app_session_id` cookie (1-year maxAge). Replace the hardcoded development credential check with
+a secret-backed credential or an enterprise identity provider before wider production use.
 
 ## QR generation
 
-From **QR Codes**, choose a branch and name. The server creates a unique code and stores a destination such as `/r/1-ABC123`. The UI renders the live absolute URL as an SVG QR code. Each QR card supports:
-
-- View the customer route
-- Download the QR as SVG
-- Disable or reactivate the QR
-- Display branch, QR name, code, and destination URL
-
-The three seeded demo routes are intentionally human-friendly for demonstration; newly generated codes use a unique branch-prefixed identifier.
+From **QR Codes**, choose a branch and name. The server creates a unique code and stores a
+destination such as `/r/1-ABC123`. The UI renders the live absolute URL as an SVG QR code. Each
+QR card supports: view the customer route, download the QR as SVG, disable or reactivate the QR,
+and displays branch, QR name, code, and destination URL. The operational model is one universal
+QR for all stores — branch-bound demo routes remain supported for legacy printed codes.
 
 ## Review behavior and validation
 
-Public submissions enforce server-side validation for receipt number, ratings, comment length, QR existence, QR status, branch status, and a lightweight IP/QR rate limiter. Submissions with a duplicate receipt for the same branch receive a friendly duplicate message instead of silently deleting data. If any rating is at or below the configured negative threshold, the server creates an open critical alert.
+Public submissions enforce server-side validation for receipt number (required, ≤80 chars),
+ratings (integer 1–5), comment length (≤1000), QR existence and status, branch status, and a
+**15-second per-IP-per-QR rate limiter** (`TOO_MANY_REQUESTS`, in-memory map). Duplicate receipt
+numbers for the same branch return a friendly duplicate message; no data is silently deleted.
+Any rating at or below the configured negative threshold auto-creates an open critical alert.
 
-The admin procedures enforce authentication and scope on the backend. A `branch_admin` can only query and mutate records belonging to the assigned branch. A `viewer` can query but cannot write. `admin` / `super_admin` can access the complete workspace. Admin actions write audit events.
+The admin procedures enforce authentication and scope on the backend. A `branch_admin` can only
+query and mutate records belonging to the assigned branch. A `viewer` can query but cannot write.
+`admin` / `super_admin` can access the complete workspace. Admin actions write audit events.
 
 ## Build and production deployment
 
 ```bash
 pnpm check
-pnpm build
-pnpm start
+pnpm build   # vite client -> dist/public (+ esbuild server dist/index.js; dist/v2 is legacy)
+docker compose up -d --build app-full-v2   # deploy reviewv2
 ```
 
-The managed WebDev deployment builds the Vite client and bundles the Express/tRPC server into `dist`. Use a checkpoint before publishing. Production hardening should include replacing the development credential check with a secret-backed value, configuring the production domain, validating rate limits against expected traffic, and enabling backups for the database.
+Static asset caching (root cause of the old "blank first paint until refresh"): hashed files
+under `/assets` are content-addressed by Vite, so `server/_core/vite.ts::serveStatic` serves them
+with `Cache-Control: public, max-age=31536000, immutable`. The HTML shell and the SPA fallback
+are served `no-store` so a new deploy's hashed reference is picked up immediately. Before this,
+`express.static` sent `max-age=0`, Cloudflare returned `REVALIDATED` on every visit, and each
+visitor re-pulled the ~900KB entry chunk from the slow OCI origin (3.5–8s of blank page). After
+any deploy that changes hashed asset names, purge the old file URLs in Cloudflare.
+
+Production hardening should include replacing the development credential check with a
+secret-backed value, validating rate limits against expected traffic, and enabling database
+backups (`mysql_data` / `mysql_v2_data` volumes).
 
 ## Architecture overview
 
 - `client/src/pages/PublicReview.tsx` owns the mobile customer journey.
-- `client/src/pages/AdminApp.tsx` owns the workspace layout and feature pages.
-- `client/src/App.tsx` wires public, QR, and admin routes.
-- `server/routers.ts` defines public and protected tRPC contracts, validation, access checks, and mutation orchestration.
-- `server/db.ts` contains database queries, scope filtering, review creation, alert generation, analytics aggregation, CSV export, and audit logging.
+- `client/src/pages/AdminApp.tsx` owns the workspace layout and all feature pages (login gate,
+  overview, reviews, alerts, QR codes, analytics, settings) — one file, tab-routed by URL.
+- `client/src/App.tsx` wires public (`/r/:code`), admin (`/admin`), and 404 routes.
+- `server/routers.ts` defines public and protected tRPC contracts, validation, access checks,
+  login/logout, and mutation orchestration.
+- `server/db.ts` contains database queries, scope filtering, review creation, status-transition
+  enforcement, alert generation, analytics aggregation, CSV export, and audit logging.
+- `server/analytics.ts` — AI-summarize prompt assembly + server-side stats.
+- `shared/store.ts` — receipt-number → store mapping for unassigned reviews.
 - `drizzle/schema.ts` is the source of truth for relational tables and indexes.
-- `server/seed.ts` creates realistic demonstration rows without hardcoding dashboard values.
+- `server/v2/*` — legacy dead vanilla-admin, not served by any running container.
 
 ## Acceptance flow
 
-1. Open `/r/SGK`; the form shows `Branch: Singkawang` and does not expose a branch selector.
-2. Submit a unique receipt with ratings; the backend stores branch and QR IDs automatically.
-3. Open the reviews workspace; the review appears with calculated overall rating.
-4. Submit a rating of 1; an open negative-review alert is created.
+1. Open `/r/UNIVERSAL`; the form shows no branch selector. Submit a unique receipt with ratings;
+   the review is stored with `branchId NULL` and appears with calculated overall rating.
+2. In the reviews workspace, assign the store inline; it now counts under that branch.
+3. Submit a rating at or below the negative threshold; an open negative-review alert is created.
+4. Move a review to `resolved` with a note; the alert resolve never reopens it.
 5. Disable a QR from QR Codes; visiting its route shows `QR Code tidak aktif.` and no form.
-6. Open `/r/PTK`; the route resolves to Pontianak rather than Singkawang.
-7. Use the branch-scoped role in an authenticated session; server-side scope checks prevent access to another branch.
+6. As `admin`, try to archive or return a resolved review to New — both blocked; as `superadmin`,
+   archive/unarchive works but `resolved → new` is blocked for everyone.
+7. First visit to `/admin` renders within one asset download: `/assets/*` responses carry
+   `immutable, max-age=1y`, the HTML shell carries `no-store`.
