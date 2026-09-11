@@ -27,7 +27,7 @@ receipt numbers display as `Unknown` in the store column.
 - Recharts for analytics
 - `qrcode.react` for real SVG QR codes
 - `xlsx` for the export button — **dynamically imported** so it stays out of the initial chunk
-- Vitest suite: `pnpm test` (21 tests in `server/analytics.test.ts`, `auth.logout.test.ts`,
+- Vitest suite: `pnpm test` (26 tests in `server/analytics.test.ts`, `auth.logout.test.ts`,
   `status-visibility.test.ts`, `store.test.ts`)
 
 Authentication uses a signed local session cookie. OAuth registration is disabled for this
@@ -137,6 +137,15 @@ Prompt assembly and all aggregate maths live in `server/analytics.ts`
 computed server-side and injected into the prompt as fixed facts — the model is instructed not
 to recount. This is deliberate: left to compute from raw rows, the model fabricated counts
 (claimed 88 reviews and 53 bad when 78 rows were sent, 19 of them bad).
+
+Output shape (v2, per owner request — plain lines, no markdown tables): first line gives the
+period, overall average, and per-aspect averages; second line gives the count of still
+unresolved reviews; then one line per store sorted by lowest average, each naming the
+*lowest-rated review that is not yet resolved* (receipt number, per-aspect ratings, date,
+status label, quoted comment if present); finally one closing line about the weakest aspect.
+"Lowest" ignores resolved reviews by design — resolved means no longer a problem. The
+weakest-aspect sentence is computed server-side and injected as a fact (all-equal dimensions
+are reported as equal, not hallucinated).
 
 ## Installation and local development
 

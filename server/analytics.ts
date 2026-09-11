@@ -1,6 +1,7 @@
 /** Perakitan prompt + statistik untuk AI Summarize (dipisah supaya bisa diuji tanpa DB). */
 
 export type SummaryReview = {
+  receiptNo: string;
   storeName: string | null;
   storeCode: string | null;
   installationRating: number;
@@ -11,18 +12,44 @@ export type SummaryReview = {
   createdAt: Date;
 };
 
+export type Dimensions = { "Pemasangan": number; Grooming: number; Pelayanan: number };
+
+export type LowestUnresolved = {
+  receiptNo: string;
+  overall: number;
+  dims: Dimensions;
+  comment: string | null;
+  statusLabel: string;
+  date: string;
+};
+
+export type StoreStats = {
+  name: string;
+  n: number;
+  average: number;
+  dimensions: Dimensions;
+  pending: number;
+  lowest: LowestUnresolved | null;
+};
+
 export type SummaryStats = {
   total: number;
   good: number;
   mid: number;
   bad: number;
+  pending: number;
   average: number;
-  dimensions: { "Pemasangan": number; Grooming: number; Pelayanan: number };
-  stores: { name: string; n: number; average: number; bad: number; dimensions: { "Pemasangan": number; Grooming: number; Pelayanan: number } }[];
+  dimensions: Dimensions;
+  stores: StoreStats[];
 };
 
 const DIMS = ["Pemasangan", "Grooming", "Pelayanan"] as const;
 const mean = (ns: number[]) => (ns.length ? ns.reduce((a, b) => a + b, 0) / ns.length : 0);
+const f1 = (n: number) => n.toFixed(1);
+const STATUS_LABEL: Record<string, string> = {
+  new: "baru, belum ditangani",
+  open: "dalam penanganan",
+};
 
 export const overallRating = (r: Pick<SummaryReview, "installationRating" | "groomingRating" | "serviceRating">) =>
   (r.installationRating + r.groomingRating + r.serviceRating) / 3;
@@ -31,10 +58,23 @@ export const overallRating = (r: Pick<SummaryReview, "installationRating" | "gro
 export const formatReviewDate = (d: Date) =>
   new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", timeZone: "Asia/Jakarta" }).format(new Date(d));
 
+const dimsOf = (list: SummaryReview[]): Dimensions => ({
+  "Pemasangan": mean(list.map((r) => r.installationRating)),
+  "Grooming": mean(list.map((r) => r.groomingRating)),
+  "Pelayanan": mean(list.map((r) => r.serviceRating)),
+});
+
+const truncateComment = (c: string | null) => {
+  if (!c) return null;
+  const t = c.trim().replace(/\s+/g, " ");
+  return t.length > 120 ? `${t.slice(0, 117)}...` : t;
+};
+
 /**
  * Hitung statistik di server. LLM terbukti salah hitung saat diberi data mentah
  * (klaim 88 ulasan padahal 78 dikirim), jadi angka dihitung di sini dan dikirim
- * sebagai fakta yang tidak boleh diubah.
+ * sebagai fakta yang tidak boleh diubah. "Terendah" hanya dilihat dari review
+ * yang belum beres (status bukan resolved) — yang sudah resolved bukan PR lagi.
  */
 export function summarizeStats(reviews: SummaryReview[]): SummaryStats {
   const byStore = new Map<string, SummaryReview[]>();
@@ -46,60 +86,90 @@ export function summarizeStats(reviews: SummaryReview[]): SummaryStats {
   }
   const good = reviews.filter((r) => overallRating(r) >= 4).length;
   const bad = reviews.filter((r) => overallRating(r) < 3).length;
+  const pendingAll = reviews.filter((r) => r.status !== "resolved").length;
+  const stores: StoreStats[] = Array.from(byStore.entries())
+    .map(([name, list]) => {
+      const pending = list.filter((r) => r.status !== "resolved");
+      const low = pending.length
+        ? pending.reduce((a, b) => (overallRating(b) < overallRating(a) ? b : a))
+        : null;
+      return {
+        name,
+        n: list.length,
+        average: mean(list.map(overallRating)),
+        dimensions: dimsOf(list),
+        pending: pending.length,
+        lowest: low
+          ? {
+              receiptNo: low.receiptNo,
+              overall: overallRating(low),
+              dims: { "Pemasangan": low.installationRating, Grooming: low.groomingRating, Pelayanan: low.serviceRating },
+              comment: truncateComment(low.comment),
+              statusLabel: STATUS_LABEL[low.status] ?? low.status,
+              date: formatReviewDate(low.createdAt),
+            }
+          : null,
+      };
+    })
+    .sort((a, b) => a.average - b.average || b.pending - a.pending);
   return {
     total: reviews.length,
     good,
     bad,
+    pending: pendingAll,
     mid: reviews.length - good - bad,
     average: mean(reviews.map(overallRating)),
-    dimensions: {
-      "Pemasangan": mean(reviews.map((r) => r.installationRating)),
-      "Grooming": mean(reviews.map((r) => r.groomingRating)),
-      "Pelayanan": mean(reviews.map((r) => r.serviceRating)),
-    },
-    stores: Array.from(byStore.entries())
-      .map(([name, list]) => ({
-        name,
-        n: list.length,
-        average: mean(list.map(overallRating)),
-        bad: list.filter((r) => overallRating(r) < 3).length,
-        dimensions: {
-          "Pemasangan": mean(list.map((r) => r.installationRating)),
-          "Grooming": mean(list.map((r) => r.groomingRating)),
-          "Pelayanan": mean(list.map((r) => r.serviceRating)),
-        },
-      }))
-      .sort((a, b) => b.bad - a.bad || b.n - a.n),
+    dimensions: dimsOf(reviews),
+    stores,
   };
 }
+
+const dimLine = (d: Dimensions) => `Pemasangan ${f1(d["Pemasangan"])}, Grooming ${f1(d.Grooming)}, Pelayanan ${f1(d.Pelayanan)}`;
 
 export function buildSummaryPrompt(reviews: SummaryReview[]): string {
   if (!reviews.length) throw new Error("buildSummaryPrompt: tidak ada review");
   const s = summarizeStats(reviews);
   const period = `${formatReviewDate(reviews[reviews.length - 1].createdAt)} - ${formatReviewDate(reviews[0].createdAt)}`;
+  const dimEntries = Object.entries(s.dimensions) as [keyof Dimensions, number][];
+  const dimMin = Math.min(...dimEntries.map(([, v]) => v));
+  const worstDims = dimEntries.filter(([, v]) => v === dimMin).map(([k]) => k);
+  const worstFact =
+    worstDims.length === 3
+      ? `Ketiga aspek rata-ratanya sama (${f1(s.average)}/5).`
+      : `Aspek terendah keseluruhan: ${worstDims.join(" dan ")} (${f1(dimMin)}/5).`;
+  const storeFacts = s.stores.map((st) => {
+    const head = `- ${st.name}: ${st.n} review, rata-rata ${f1(st.average)}/5 (${dimLine(st.dimensions)})`;
+    if (!st.lowest) return `${head}; tidak ada review yang belum di-resolve`;
+    const l = st.lowest;
+    const comment = l.comment ? `, komentar: "${l.comment}"` : "";
+    return (
+      `${head}; review terendah yang belum selesai: no. receipt ${l.receiptNo} (${f1(l.overall)}/5, ${l.date}) — ` +
+      `Pemasangan ${l.dims["Pemasangan"]}, Grooming ${l.dims.Grooming}, Pelayanan ${l.dims.Pelayanan}, ` +
+      `status ${l.statusLabel}${comment}`
+    );
+  });
   return [
-    `Analisis ${s.total} ulasan pelanggan dari ${s.stores.length} store (7 hari terakhir).`,
+    "Kamu meringkas review kualitas layanan (rating 1-5: Pemasangan=Gym Equipment, Grooming=Room Facilities, Pelayanan=Employee Service).",
     "",
-    "== STATISTIK (sudah dihitung sistem — jangan hitung ulang, jangan ubah angkanya) ==",
-    `Total review: ${s.total} (periode ${period})`,
-    `Rata-rata keseluruhan: ${s.average.toFixed(2)} / 5.00`,
-    `Sebaran: ${s.good} bagus (>=4.0) | ${s.mid} sedang (3.0-3.99) | ${s.bad} buruk (<3.0)`,
-    `Rata-rata per aspek: ${DIMS.map((d) => `${d} ${s.dimensions[d].toFixed(2)}`).join(" | ")}`,
+    `ANGKA FAKTA periode ${period} — gunakan PERSIS, dilarang menghitung atau mengarang angka baru:`,
+    `- Total ${s.total} review, rata-rata keseluruhan ${f1(s.average)}/5. Per aspek: ${dimLine(s.dimensions)}.`,
+    `- Masih belum di-resolve: ${s.pending} review.`,
+    worstFact,
+    ...storeFacts,
     "",
-    "Per store (angka ini PASTI BENAR, pakai apa adanya):",
-    ...s.stores.map((st) => `  - ${st.name}: ${st.n} review, rata-rata ${st.average.toFixed(2)}, ${st.bad} review buruk | ${DIMS.map((d) => `${d} ${st.dimensions[d].toFixed(2)}`).join(", ")}`),
+    "Tulis ringkasan HANYA dari fakta di atas, format persis seperti ini:",
+    "1. Baris 1: \"Dalam periode {period}, {total} review masuk dengan rata-rata {average}/5 (Pemasangan x, Grooming y, Pelayanan z).\" — angka dari FAKTA.",
+    "2. Baris 2: kalau ada yang belum di-resolve: \"{pending} review masih belum diselesaikan.\" kalau nol: \"Semua review periode ini sudah di-resolve.\"",
+    "3. Lanjut satu baris per store, urut rata-rata terendah: \"{store} rata-rata {avg}/5\" — kalau ada review terendah belum selesai tambah \"; terendah di no. receipt {receiptNo} ({overall}/5, {date}): Pemasangan {i}, Grooming {g}, Pelayanan {s}, status {statusLabel}\" dan kutip komentarnya kalau ada.",
+    "4. Kalimat penutup ≤1 baris: sebut aspek terendah sesuai baris FAKTA 'Aspek terendah keseluruhan' (kalau ketiganya sama, sebut rata-rata ketiganya setara) dan perlu perhatian.",
     "",
-    "== DATA MENTAH ==",
-    "Format: [tanggal] [store] rating pemasangan/grooming/pelayanan (rata-rata X.X) status: komentar.",
-    ...reviews.map((r, i) => `${i + 1}. [${formatReviewDate(r.createdAt)}] [${r.storeName ?? r.storeCode ?? "?"}] rating ${r.installationRating}/${r.groomingRating}/${r.serviceRating} (rata-rata ${overallRating(r).toFixed(2)}) status ${r.status}: ${r.comment ?? "-"}`),
+    "Aturan keras:",
+    "- Bahasa Indonesia santai-profesional, maksimal 160 kata, TANPA tabel/heading markdown/bullet bersarang.",
+    "- Dilarang menyebut angka, store, atau receipt yang tidak ada di FAKTA. Jangan menerawang penyebab/solusi.",
+    "- Jangan gunakan data mentah di bawah ini untuk menghitung ulang — hanya untuk memilih kutipan komentar bila perlu.",
     "",
-    "== YANG HARUS KAMU TULIS (bahasa Indonesia) ==",
-    "1. Ringkasan kondisi — pakai angka dari blok STATISTIK di atas, jangan mengarang.",
-    "2. YANG SUDAH BAGUS: aspek/store yang konsisten dipuji, sebut store + aspeknya.",
-    "3. YANG PERLU IMPROVE: aspek/store bermasalah, urut dari paling parah, sebutkan aspek & store.",
-    "4. Rekomendasi aksi konkret per store bermasalah (maks 5 poin), spesifik dan bisa dikerjakan tim lapangan.",
-    "",
-    "Aturan: dasarkan HANYA pada data di atas. JANGAN menyebut angka yang tidak ada di blok STATISTIK.",
-    "Kalau store tidak bermasalah, jangan dipaksa masuk daftar improve.",
+    "DATA MENTAH:",
+    ...reviews.map((r) =>
+      `${formatReviewDate(r.createdAt)} | ${r.storeName ?? "?"} | P:${r.installationRating} G:${r.groomingRating} S:${r.serviceRating} | ${r.status} | ${r.comment ?? ""}`),
   ].join("\n");
 }

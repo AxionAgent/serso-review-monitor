@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildSummaryPrompt, formatReviewDate, overallRating, summarizeStats, type SummaryReview } from "./analytics";
 
-const mk = (over: Partial<SummaryReview> & { storeName: string; ratings: [number, number, number] }): SummaryReview => ({
+let receiptSeq = 0;
+const mk = (over: Partial<SummaryReview> & { storeName: string | null; ratings: [number, number, number] }): SummaryReview => ({
+  receiptNo: over.receiptNo ?? `R${++receiptSeq}`,
   storeName: over.storeName,
   storeCode: null,
   installationRating: over.ratings[0],
@@ -42,7 +44,7 @@ describe("summarizeStats", () => {
     expect(s.average).toBeCloseTo(3, 6);
   });
 
-  it("mengurutkan store dari yang paling banyak review buruk", () => {
+  it("mengurutkan store dari rata-rata terendah", () => {
     const reviews = [
       mk({ storeName: "Bersih", ratings: [5, 5, 5] }),
       mk({ storeName: "Parah", ratings: [1, 1, 1] }),
@@ -51,8 +53,36 @@ describe("summarizeStats", () => {
     ];
     const s = summarizeStats(reviews);
     expect(s.stores.map((x) => x.name)).toEqual(["Parah", "Bersih", "Sedang"]);
-    expect(s.stores[0].bad).toBe(2);
     expect(s.stores[0].n).toBe(2);
+    expect(s.stores[0].average).toBeCloseTo(1.5, 6);
+  });
+
+  it("lowest diambil hanya dari review belum resolved", () => {
+    const reviews = [
+      // overall 1.0 tapi SUDAH resolved -> tidak boleh jadi "terendah perlu perhatian"
+      mk({ storeName: "A", ratings: [1, 1, 1], status: "resolved", receiptNo: "DONE-1" }),
+      mk({ storeName: "A", ratings: [2, 2, 2], status: "new", receiptNo: "OPEN-2" }),
+      mk({ storeName: "A", ratings: [5, 5, 5], status: "open", receiptNo: "OPEN-3" }),
+    ];
+    const s = summarizeStats(reviews);
+    expect(s.pending).toBe(2);
+    expect(s.stores[0].pending).toBe(2);
+    expect(s.stores[0].lowest?.receiptNo).toBe("OPEN-2");
+    expect(s.stores[0].lowest?.statusLabel).toBe("baru, belum ditangani");
+  });
+
+  it("store yang semuanya resolved punya lowest null", () => {
+    const s = summarizeStats([mk({ storeName: "A", ratings: [5, 5, 5], status: "resolved" })]);
+    expect(s.stores[0].lowest).toBeNull();
+    expect(s.pending).toBe(0);
+  });
+
+  it("komentar lowest dipotong ke <=120 char", () => {
+    const long = "x".repeat(300);
+    const s = summarizeStats([mk({ storeName: "A", ratings: [1, 1, 1], comment: long })]);
+    const c = s.stores[0].lowest?.comment ?? "";
+    expect(c.length).toBeLessThanOrEqual(120);
+    expect(c.endsWith("...")).toBe(true);
   });
 
   it("store tanpa nama jatuh ke storeCode lalu '?' (tidak crash)", () => {
@@ -66,6 +96,7 @@ describe("summarizeStats", () => {
     const s = summarizeStats([]);
     expect(s.total).toBe(0);
     expect(s.average).toBe(0);
+    expect(s.pending).toBe(0);
     expect(s.dimensions["Pemasangan"]).toBe(0);
     expect(s.stores).toEqual([]);
   });
@@ -79,23 +110,35 @@ describe("overallRating", () => {
 
 describe("buildSummaryPrompt", () => {
   const reviews = [
-    mk({ storeName: "POOL SINGKAWANG", ratings: [2, 2, 2], comment: "kebersihan kurang" }),
-    mk({ storeName: "PONTIANAK", ratings: [5, 5, 5], comment: "mantap" }),
+    mk({ storeName: "POOL SINGKAWANG", ratings: [2, 2, 2], comment: "kebersihan kurang", receiptNo: "TIKET-9", status: "new" }),
+    mk({ storeName: "PONTIANAK", ratings: [5, 5, 5], comment: "mantap", status: "resolved" }),
   ];
 
-  it("menyisipkan angka yang sudah dihitung agar LLM tidak mengarang", () => {
+  it("menyisipkan angka fakta yang sudah dihitung agar LLM tidak mengarang", () => {
     const p = buildSummaryPrompt(reviews);
-    expect(p).toContain("Total review: 2");
-    expect(p).toContain("1 bagus (>=4.0)");
-    expect(p).toContain("1 buruk (<3.0)");
-    expect(p).toContain("POOL SINGKAWANG");
+    expect(p).toContain("Total 2 review");
+    expect(p).toContain("rata-rata keseluruhan 3.5/5");
+    expect(p).toContain("Pemasangan 3.5, Grooming 3.5, Pelayanan 3.5");
+    expect(p).toContain("Masih belum di-resolve: 1 review.");
   });
 
-  it("memuat instruksi bagian bagus + improve + larangan mengarang angka", () => {
+  it("fakta store memuat receipt terendah yang belum selesai + komentarnya", () => {
     const p = buildSummaryPrompt(reviews);
-    expect(p).toContain("YANG SUDAH BAGUS");
-    expect(p).toContain("YANG PERLU IMPROVE");
-    expect(p).toContain("JANGAN menyebut angka yang tidak ada di blok STATISTIK");
+    expect(p).toContain("POOL SINGKAWANG");
+    expect(p).toContain("no. receipt TIKET-9");
+    expect(p).toContain("status baru, belum ditangani");
+    expect(p).toContain('komentar: "kebersihan kurang"');
+    // PONTIANAK sudah resolved semua -> tidak ada review belum selesai
+    expect(p).toContain("PONTIANAK: 1 review, rata-rata 5.0/5");
+    expect(p).toContain("tidak ada review yang belum di-resolve");
+  });
+
+  it("memuat format keluaran + larangan mengarang angka", () => {
+    const p = buildSummaryPrompt(reviews);
+    expect(p).toContain("Bahasa Indonesia santai-profesional");
+    expect(p).toContain("dilarang menghitung atau mengarang angka baru");
+    expect(p).toContain("Dilarang menyebut angka, store, atau receipt");
+    expect(p).toContain("DATA MENTAH:");
   });
 
   it("memuat tanggal tiap baris data mentah", () => {
@@ -105,6 +148,14 @@ describe("buildSummaryPrompt", () => {
 
   it("melempar kalau tidak ada review", () => {
     expect(() => buildSummaryPrompt([])).toThrow();
+  });
+
+  it("fakta aspek terendah: seri disebut setara, beda disebut nama aspeknya", () => {
+    // kedua review di fixture punya dimensi sama -> "Ketiga aspek rata-ratanya sama"
+    expect(buildSummaryPrompt(reviews)).toContain("Ketiga aspek rata-ratanya sama (3.5/5).");
+    // fixture miring: Pemasangan sendiri yang terendah
+    const pSkew = buildSummaryPrompt([mk({ storeName: "A", ratings: [1, 5, 5], status: "new" })]);
+    expect(pSkew).toContain("Aspek terendah keseluruhan: Pemasangan (1.0/5).");
   });
 });
 
