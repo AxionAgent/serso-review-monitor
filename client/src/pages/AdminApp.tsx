@@ -4,6 +4,7 @@ import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Bell, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, FileImage, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, RefreshCw, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 
 const navItems = [
@@ -21,7 +22,7 @@ const stars = (value: number) => "★".repeat(Math.round(value)) + "☆".repeat(
 const todayLabel = () => new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
 export default function AdminApp() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const active = navItems.find((item) => item.path === location || (item.path !== "/admin" && location.startsWith(item.path))) ?? navItems[0];
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -37,10 +38,40 @@ export default function AdminApp() {
           <div className="mt-auto border-t border-white/10 p-4"><div className="mb-3 rounded-2xl bg-white/10 p-3"><p className="text-xs font-semibold text-blue-100">Data health</p><div className="mt-2 flex items-center gap-2 text-[11px] text-blue-100/70"><span className="h-2 w-2 rounded-full bg-[#79a8ff]" /> Database connected</div><div className="mt-1 flex items-center gap-2 text-[11px] text-blue-100/70"><span className="h-2 w-2 rounded-full bg-[#79a8ff]" /> QR routing active</div></div><button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-blue-100/70 hover:bg-white/10 hover:text-white"><LogOut className="h-4 w-4" /> Sign out</button></div>
         </div>
       </aside>
+      <NewReviewToasts onOpenReviews={() => { navigate("/admin/reviews"); utils.admin.reviews.invalidate(); }} />
       {mobileOpen ? <button onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-blue-950/30 lg:hidden" aria-label="Close menu" /> : null}
       <div className="lg:pl-72"><header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/70 bg-white/65 px-5 backdrop-blur-2xl sm:px-8"><div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="rounded-xl p-2 hover:bg-white/80 lg:hidden"><Menu className="h-5 w-5" /></button><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2f6fed]">Customer experience</p><h1 className="text-lg font-bold tracking-tight">{active.label}</h1></div></div><div className="flex items-center gap-3"><div className="hidden items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-sm text-slate-400 shadow-sm backdrop-blur-xl md:flex"><Search className="h-4 w-4" /><span>Search reviews...</span><kbd className="ml-5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px]">⌘ K</kbd></div><button className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/80 bg-white/70 text-slate-500 shadow-sm backdrop-blur-xl"><Bell className="h-4 w-4" /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-blue-500" /></button><div className="hidden h-10 w-10 place-items-center rounded-xl bg-[#2f6fed] text-sm font-bold text-white shadow-lg shadow-blue-500/20 sm:grid">{user.name?.slice(0, 1).toUpperCase() ?? "A"}</div></div></header><main className="mx-auto max-w-[1440px] p-5 sm:p-8"><PageContent path={location} /></main></div>
     </div>
   );
+}
+
+/**
+ * Poll ringan (10s): id review terbaru. Naik -> toast + invalidate list, jadi halaman
+ * Reviews yang lagi kebuka ikut refresh tanpa pindah menu/refresh manual (owner request).
+ * PC: pojok kanan bawah; mobile: atas. First run cuma nyetup baseline, gak notif review lama.
+ */
+function NewReviewToasts({ onOpenReviews }: { onOpenReviews: () => void }) {
+  const utils = trpc.useUtils();
+  const lastId = useRef<number | null>(null);
+  const { data } = trpc.admin.latestReviewAt.useQuery(undefined, { refetchInterval: 10_000 });
+  useEffect(() => {
+    if (!data) return;
+    if (lastId.current === null) { lastId.current = data.id; return; }
+    if (data.id > lastId.current) {
+      lastId.current = data.id;
+      const mobile = window.matchMedia("(max-width: 639px)").matches;
+      toast(`Review baru masuk: ${data.receiptNo || "?"}`, {
+        id: "new-review",
+        duration: 8000,
+        position: mobile ? "top-center" : "bottom-right",
+        action: { label: "Lihat", onClick: onOpenReviews },
+      });
+      utils.admin.reviews.invalidate();
+      utils.admin.alerts.invalidate();
+      utils.dashboard.overview.invalidate();
+    }
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
 }
 
 function LoginGate({ isPending, error, onLogin }: { isPending: boolean; error?: string; onLogin: (username: string, password: string) => void }) {
@@ -256,7 +287,7 @@ function ReviewsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"new" | "open" | "resolved" | "archived" | undefined>();
   const [storeCode, setStoreCode] = useState<string | undefined>();
-  const [sortKey, setSortKey] = useState<"date" | "store" | "rating" | "status">("date");
+  const [sortKey, setSortKey] = useState<null | "date" | "store" | "rating" | "status">(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -278,18 +309,27 @@ function ReviewsPage() {
   const storeOptions = reviewsResponse?.storeOptions ?? [];
 
   const statusRank: Record<string, number> = { new: 0, open: 1, resolved: 2, archived: 3 };
-  const sortedReviews = [...reviews].sort((a, b) => {
+  // sortKey null = urutan default server (terbaru dulu). Jangan di-sort ulang di client.
+  const sortedReviews = sortKey === null ? reviews : [...reviews].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
     if (sortKey === "date") return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
     if (sortKey === "store") return ((a.storeName ?? a.branchName ?? "")).localeCompare((b.storeName ?? b.branchName ?? "")) * dir;
     if (sortKey === "rating") return (a.overall - b.overall) * dir;
     return ((statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9)) * dir;
   });
-  const toggleSort = (key: "date" | "store" | "rating" | "status") => {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir(key === "date" ? "desc" : "asc"); }
+  type SortCol = "date" | "store" | "rating" | "status";
+  // Klik 1: asc | klik 2: desc | klik 3: reset ke default (date terbaru). Owner request.
+  const toggleSort = (key: SortCol) => {
+    // Klik pertama di kolom mana pun = asc (selalu ada perubahan keliatan; date desc = posisi default).
+    if (sortKey !== key) { setSortKey(key); setSortDir("asc"); return; }
+    if (sortDir === "asc") { setSortDir("desc"); return; }
+    setSortKey(null);
   };
-  const SortIcon = ({ col }: { col: "date" | "store" | "rating" | "status" }) => <span className="ml-1 inline-block text-[9px]">{sortKey === col ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>;
+  const SortIcon = ({ col }: { col: SortCol }) => {
+    const active = sortKey ?? "date"; // default = date desc
+    const activeDir = sortKey ? sortDir : "desc";
+    return <span className="ml-1 inline-block text-[9px]">{active === col ? (activeDir === "asc" ? "▲" : "▼") : "↕"}</span>;
+  };
 
   const { data: currentUser } = trpc.auth.me.useQuery();
   const deleteOne = trpc.admin.deleteReview.useMutation();

@@ -465,6 +465,19 @@ export async function assignReview(user: ScopeUser, id: number, branchId: number
   return { success: true };
 }
 
+/** Poll murah utk notif "review baru" di admin: 1 baris terbaru (scope user). */
+export async function latestReviewAt(user: ScopeUser) {
+  const db = await requireDb();
+  const scope = scopedBranchId(user);
+  const rows = await db
+    .select({ id: reviews.id, receiptNo: reviews.receiptNo, createdAt: reviews.createdAt })
+    .from(reviews)
+    .where(scope === undefined ? undefined : eq(reviews.branchId, scope))
+    .orderBy(desc(reviews.createdAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function listAlerts(user: ScopeUser, existingRows?: Awaited<ReturnType<typeof getJoinedReviews>>) {
   const rows = existingRows ?? await getVisibleJoinedReviews(user);
   const ids = rows.map(({ review }) => review.id);

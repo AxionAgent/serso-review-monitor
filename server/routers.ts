@@ -7,6 +7,7 @@ import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router, superAdminProcedure } from "./_core/trpc";
 import {
+  assignReview,
   createQRCode,
   createReview,
   dashboardData,
@@ -17,11 +18,13 @@ import {
   exportReviews,
   findActiveQR,
   findReviewsBySearch,
+  getAllNonArchivedReviews,
   getBranchActiveTeams,
   getDb,
   getReviewDetail,
   getSettings,
   getUserByOpenId,
+  latestReviewAt,
   listAlerts,
   listPublicRoutes,
   listQRCodes,
@@ -31,8 +34,6 @@ import {
   toggleQRCode,
   updateReviewStatus,
   upsertUser,
-  assignReview,
-  getAllNonArchivedReviews,
 } from "./db";
 import { renderSummary } from "./analytics";
 import { settings as settingsTable } from "../drizzle/schema";
@@ -178,6 +179,7 @@ export const appRouter = router({
     deleteQRCode: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteQRCode(input.id, ctx.user.id)),
     reviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => listReviews(ctx.user, input)),
     review: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input, ctx }) => getReviewDetail(ctx.user, input.id)),
+    latestReviewAt: protectedProcedure.query(({ ctx }) => latestReviewAt(ctx.user)),
     updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema, note: z.string().max(2000).nullable().optional() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id, input.note ?? null); }),
     assignReview: protectedProcedure.input(z.object({ id: z.number().int().positive(), branchId: z.number().int().positive(), teamId: z.number().int().positive().nullable().optional() })).mutation(async ({ input, ctx }) => {
       assertWritable(ctx.user);
