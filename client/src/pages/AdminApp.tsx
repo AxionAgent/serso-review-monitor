@@ -2,7 +2,6 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import * as XLSX from "xlsx";
 import { Bell, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, FileImage, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -332,6 +331,9 @@ function ReviewsPage() {
         "Komentar": label(row.comment),
         "Status": label(row.status),
       }));
+      // xlsx (~400KB) di-load on-demand: dulu di-bundle ke chunk awal dan bikin
+      // first paint blank beberapa detik saat aset belum ada di cache.
+      const XLSX = await import("xlsx");
       const ws = XLSX.utils.json_to_sheet(data);
       ws["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 20 }, { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 50 }, { wch: 10 }];
       const wb = XLSX.utils.book_new();

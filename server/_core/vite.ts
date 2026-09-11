@@ -58,10 +58,28 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Vite content-hashes every file under /assets (index-<hash>.js). The name
+  // changes on each deploy, so they are immutable — long-cache them. Without
+  // this, express.static sends max-age=0, the browser revalidates on every
+  // visit and Cloudflare keeps returning REVALIDATED (re-pull from the slow
+  // origin), so the ~900KB entry chunk stalls first paint (blank page) until
+  // it re-downloads.
+  app.use(
+    "/assets",
+    express.static(path.join(distPath, "assets"), {
+      maxAge: "1y",
+      immutable: true,
+      index: false,
+    })
+  );
+
+  // Everything else (the SPA shell / HTML) must always revalidate so a new
+  // deploy's hashed asset reference is picked up immediately.
+  app.use(express.static(distPath, { index: false, maxAge: 0 }));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
