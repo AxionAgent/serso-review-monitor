@@ -529,7 +529,10 @@ export async function getAllNonArchivedReviews(user: ScopeUser, days = 7) {
   return rows.map((r) => ({
     ...r,
     storeCode: resolveStoreFromTicket(r.receiptNo).code,
-    storeName: r.storeName ?? storeLabel(r.receiptNo),
+    // Rekap = per-STORE (lookup prefiks tiket -> store.json), BUKAN per-pool/branch.
+    // Dulu branch menang -> grup "POOL SINGKAWANG"/"PONTIANAK" campur aduk sama nama store.
+    // Fallback branch cuma kalau tiket gak bisa di-parse jadi kode store sama sekali.
+    storeName: storeLabel(r.receiptNo) ?? r.storeName,
   }));
 }
 

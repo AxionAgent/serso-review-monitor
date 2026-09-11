@@ -292,7 +292,6 @@ function ReviewsPage() {
   const SortIcon = ({ col }: { col: "date" | "store" | "rating" | "status" }) => <span className="ml-1 inline-block text-[9px]">{sortKey === col ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>;
 
   const { data: currentUser } = trpc.auth.me.useQuery();
-  const update = trpc.admin.updateReviewStatus.useMutation();
   const deleteOne = trpc.admin.deleteReview.useMutation();
   const deleteAll = trpc.admin.deleteAllReviews.useMutation();
   const utils = trpc.useUtils();
@@ -397,28 +396,8 @@ function ReviewsPage() {
                       <button onClick={() => setDetailReviewId(review.id)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#2f6fed] hover:text-[#2f6fed]">
                         <Eye className="h-3.5 w-3.5" /> Detail
                       </button>
-                      <select
-                        value={review.status}
-                        onChange={(e) => {
-                          const nextStatus = e.target.value as "new" | "open" | "resolved" | "archived";
-                          // V2: Resolved butuh catatan tindakan — buka modal detail dgn textarea note.
-                          if (nextStatus === "resolved") {
-                            setDetailReviewId(review.id);
-                            return;
-                          }
-                          update.mutate({ id: review.id, status: nextStatus }, { onSuccess: () => utils.admin.reviews.invalidate() });
-                        }}
-                        disabled={!canDelete && review.status === "archived"}
-                        className="rounded-lg border border-slate-200 bg-white/75 px-2 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {/* V2: admin hanya lihat New/Open/Resolved. Archived = super_admin only.
-                            New: admin cuma "no-op" (sudah New); super_admin boleh open→new.
-                            Semua role diblokir resolved/archived→new (invariant server). */}
-                        <option value="new" disabled={review.status !== "new" && !(canDelete && review.status === "open")}>New</option>
-                        <option value="open">Open</option>
-                        <option value="resolved">Resolved</option>
-                        {canDelete ? <option value="archived">Archived</option> : null}
-                      </select>
+                      {/* V2: dropdown ganti status di row dihapus (owner request) —
+                          perpindahan status cuma lewat modal Detail (state machine one-way). */}
                     </div>
                   </td>
                 </tr>
