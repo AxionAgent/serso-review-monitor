@@ -2,6 +2,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Dark mode manual via class .dark di <html> (toggle tombol matahari/bulan).
+   Tailwind v4: dark: default ikut prefers-color-scheme — override pakai variant ini. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  color-scheme: dark;
+  background-color: #020617;
+}
+
 :root {
   --background: #f3f7ff;
   --foreground: #102a4f;
@@ -28,6 +37,26 @@
 * { box-sizing: border-box; }
 html { font-family: 'DM Sans', sans-serif; background: #f3f7ff; }
 body { margin: 0; min-width: 320px; background: radial-gradient(circle at 8% 0%, #dbe7ff 0%, transparent 35%), radial-gradient(circle at 95% 15%, #e6efff 0%, transparent 32%), linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%); color: var(--foreground); }
+html.dark { background: #020617; }
+html.dark body { background: radial-gradient(circle at 8% 0%, rgba(47,111,237,.16) 0%, transparent 35%), radial-gradient(circle at 95% 15%, rgba(47,111,237,.10) 0%, transparent 32%), linear-gradient(135deg, #020617 0%, #0b1220 100%); color: #e2e8f0; }
+/* token tema shadcn utk komponen ui/* di dark */
+html.dark {
+  --background: #020617;
+  --foreground: #e2e8f0;
+  --card: rgb(255 255 255 / .05);
+  --card-foreground: #e2e8f0;
+  --popover: #0f172a;
+  --popover-foreground: #e2e8f0;
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+  --accent: #1e3a5f;
+  --accent-foreground: #dbe7ff;
+  --border: rgba(255, 255, 255, .1);
+  --input: rgba(255, 255, 255, .14);
+  --ring: #2f6fed;
+}
 button, a, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }

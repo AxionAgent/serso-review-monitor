@@ -111,6 +111,8 @@ export const reviewAlerts = mysqlTable(
     severity: mysqlEnum("severity", ["critical", "attention", "info"]).default("critical").notNull(),
     message: varchar("message", { length: 255 }).notNull(),
     status: mysqlEnum("status", ["open", "resolved"]).default("open").notNull(),
+    // Notifikasi "mark all as read" (owner 2026-09-11): dibaca != resolved.
+    readAt: timestamp("readAt"),
     resolvedBy: int("resolvedBy"),
     resolvedAt: timestamp("resolvedAt"),
     note: text("note"),

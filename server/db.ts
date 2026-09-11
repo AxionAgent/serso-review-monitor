@@ -530,7 +530,7 @@ export async function listNotifications(user: ScopeUser) {
     .orderBy(desc(reviews.id))
     .limit(30);
   const al = await db
-    .select({ id: reviewAlerts.id, reviewId: reviewAlerts.reviewId, message: reviewAlerts.message, severity: reviewAlerts.severity, alertStatus: reviewAlerts.status, createdAt: reviewAlerts.createdAt })
+    .select({ id: reviewAlerts.id, reviewId: reviewAlerts.reviewId, message: reviewAlerts.message, severity: reviewAlerts.severity, alertStatus: reviewAlerts.status, readAt: reviewAlerts.readAt, createdAt: reviewAlerts.createdAt })
     .from(reviewAlerts)
     .orderBy(desc(reviewAlerts.id))
     .limit(15);
@@ -540,9 +540,18 @@ export async function listNotifications(user: ScopeUser) {
     items.push({ kind: "review", id: r.id, reviewId: r.id, title: `Review baru: ${r.receiptNo || "?"}`, sub: r.status === "resolved" ? "sudah resolved" : r.status === "open" ? "status open" : "menunggu tindakan", createdAt: r.createdAt, read: !!r.readAt });
   }
   for (const a of al) {
-    items.push({ kind: "alert", id: a.id, reviewId: a.reviewId, title: a.message.slice(0, 80), sub: a.alertStatus === "resolved" ? "alert resolved" : `alert ${a.severity}`, severity: a.severity, createdAt: a.createdAt, read: a.alertStatus === "resolved" });
+    items.push({ kind: "alert", id: a.id, reviewId: a.reviewId, title: a.message.slice(0, 80), sub: a.alertStatus === "resolved" ? "alert resolved" : `alert ${a.severity}`, severity: a.severity, createdAt: a.createdAt, read: !!a.readAt });
   }
   return items.sort((x, y) => y.createdAt.getTime() - x.createdAt.getTime()).slice(0, 25);
+}
+
+/** "Mark all as read" (item 3 owner): set readAt pada semua notif yang belum dibaca. */
+export async function markAllNotificationsRead() {
+  const db = await requireDb();
+  const now = new Date();
+  await db.update(reviews).set({ readAt: now }).where(isNull(reviews.readAt));
+  await db.update(reviewAlerts).set({ readAt: now }).where(isNull(reviewAlerts.readAt));
+  return { success: true } as const;
 }
 
 /** Poll murah utk notif "review baru" di admin: 1 baris terbaru (scope user). */
@@ -633,7 +642,7 @@ export async function resolveAlert(user: ScopeUser, id: number, userId?: number,
   const db = await requireDb();
   const alertList = await db.select().from(reviewAlerts).where(eq(reviewAlerts.id, id)).limit(1);
   const targetAlert = alertList[0];
-  await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date(), note: note?.trim() ?? null }).where(eq(reviewAlerts.id, id));
+  await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date(), note: note?.trim() ?? null, readAt: new Date() }).where(eq(reviewAlerts.id, id));
   if (targetAlert?.reviewId) {
     // V2: hanya majukan review yang masih dalam flow (new/open). Review yang sudah
     // resolved/archived/reviewed tidak disentuh — resolve alert tak boleh membuka arsip.
