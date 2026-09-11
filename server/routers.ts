@@ -15,6 +15,8 @@ import {
   deleteArchivedReviews,
   deleteQRCode,
   deleteReview,
+  deleteReviewHistoryEntry,
+  editReviewHistoryEntry,
   exportReviews,
   findActiveQR,
   findReviewsBySearch,
@@ -26,16 +28,20 @@ import {
   getUserByOpenId,
   latestReviewAt,
   listAlerts,
+  listNotifications,
   listPublicRoutes,
   listQRCodes,
+  listReviewHistory,
   listReviews,
+  markReviewAsRead,
   resolveAlert,
   scopedBranchId,
   toggleQRCode,
+  updateReviewNote,
   updateReviewStatus,
   upsertUser,
 } from "./db";
-import { renderSummary } from "./analytics";
+import { renderSummary, summarizeStats } from "./analytics";
 import { settings as settingsTable } from "../drizzle/schema";
 
 const statusSchema = z.enum(["new", "open", "resolved", "archived"]);
@@ -180,7 +186,14 @@ export const appRouter = router({
     reviews: protectedProcedure.input(dateFilters.default({})).query(({ input, ctx }) => listReviews(ctx.user, input)),
     review: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input, ctx }) => getReviewDetail(ctx.user, input.id)),
     latestReviewAt: protectedProcedure.query(({ ctx }) => latestReviewAt(ctx.user)),
-    updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema, note: z.string().max(2000).nullable().optional() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id, input.note ?? null); }),
+    notifications: protectedProcedure.query(({ ctx }) => listNotifications(ctx.user)),
+    updateReviewStatus: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: statusSchema, note: z.string().max(2000).nullable().optional() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewStatus(ctx.user, input.id, input.status, ctx.user.id, input.note); }),
+    updateReviewNote: protectedProcedure.input(z.object({ id: z.number().int().positive(), note: z.string().max(2000).nullable() })).mutation(async ({ input, ctx }) => { assertWritable(ctx.user); return updateReviewNote(ctx.user, input.id, input.note, ctx.user.id); }),
+    markReviewRead: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => markReviewAsRead(ctx.user, input.id)),
+    reviewHistory: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input, ctx }) => listReviewHistory(ctx.user, input.id)),
+    // SUPER ADMIN ONLY — tidak boleh muncul/dipanggil role lain (owner request).
+    editReviewHistory: superAdminProcedure.input(z.object({ id: z.number().int().positive(), action: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => editReviewHistoryEntry(input.id, input.action, ctx.user.id)),
+    deleteReviewHistory: superAdminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteReviewHistoryEntry(input.id, ctx.user.id)),
     assignReview: protectedProcedure.input(z.object({ id: z.number().int().positive(), branchId: z.number().int().positive(), teamId: z.number().int().positive().nullable().optional() })).mutation(async ({ input, ctx }) => {
       assertWritable(ctx.user);
       assertBranchScope(ctx.user, input.branchId);
@@ -195,7 +208,8 @@ export const appRouter = router({
     if (!reviews.length) return { summary: "Tidak ada review dalam 7 hari terakhir untuk dianalisis.", generatedAt: new Date().toISOString() };
     // Deterministic: dulu mutation + LLM, hasilnya layout berantakan + risiko angka ngarang.
     // Semua fakta sudah dihitung server-side di analytics.ts — tinggal render, otomatis instan.
-    return { summary: renderSummary(reviews), generatedAt: new Date().toISOString() };
+    // stats ikut dikirim supaya UI bisa menata tipografi (item 7), bukan pre-wrap teks mentah.
+    return { summary: renderSummary(reviews), stats: summarizeStats(reviews), generatedAt: new Date().toISOString() };
   }),
   alerts: protectedProcedure.query(({ ctx }) => listAlerts(ctx.user)),
     resolveAlert: protectedProcedure

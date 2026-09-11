@@ -2,6 +2,8 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
+# git dibutuhkan vite.config appVersion() (versioning dari commit history)
+RUN apk add --no-cache git
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 RUN pnpm install --frozen-lockfile

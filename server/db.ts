@@ -179,7 +179,9 @@ function filterRows(rows: Awaited<ReturnType<typeof getJoinedReviews>>, input: {
         return false;
       }
     }
-    if (input.status && review.status !== input.status) return false;
+    // UI cuma punya Open/Resolved; "new" dianggap Open (item 1 owner).
+    if (input.status === "open") { if (review.status !== "open" && review.status !== "new") return false; }
+    else if (input.status && review.status !== input.status) return false;
     if (input.search && !haystack.includes(input.search.toLowerCase())) return false;
     if (input.rating === "low" && Math.min(review.installationRating, review.groomingRating, review.serviceRating) > 2) return false;
     if (input.rating === "high" && overall < 4) return false;
@@ -205,6 +207,7 @@ export async function listReviews(user: ScopeUser, input: Parameters<typeof filt
 
   const items = pagedRows.map(({ review, branch, qr, team }) => ({
     ...review,
+    unread: review.status === "new" && !review.readAt,
     branchName: branch?.name ?? "Unassigned",
     branchCode: branch?.code ?? "N/A",
     qrName: qr?.name ?? "Direct",
@@ -267,6 +270,13 @@ export async function getReviewDetail(user: ScopeUser, id: number) {
   if (hidden.has(row.review.status)) return undefined;
   const alerts = await db.select().from(reviewAlerts).where(eq(reviewAlerts.reviewId, id)).orderBy(desc(reviewAlerts.createdAt));
   return { ...row.review, branch: row.branch, qr: row.qr, team: row.team, overall: overallRating(row.review), storeCode: resolveStoreFromTicket(row.review.receiptNo).code, storeName: storeLabel(row.review.receiptNo), alerts };
+}
+
+/** Tandai review sudah dibaca (unread dot hilang). Idempotent, tanpa audit log. */
+export async function markReviewAsRead(user: ScopeUser, id: number) {
+  const db = await requireDb();
+  await db.update(reviews).set({ readAt: new Date() }).where(and(eq(reviews.id, id), isNull(reviews.readAt)));
+  return { success: true };
 }
 
 export async function createAuditLog(input: InsertAuditLog) {
@@ -443,15 +453,58 @@ export async function updateReviewStatus(user: ScopeUser, id: number, status: "n
     throw new Error("Viewer tidak dapat mengubah status.");
   }
   const db = await requireDb();
-  // note: disimpan saat resolve (opsional); clear saat pindah ke new/archived biar tidak nyangkut
+  // note: disimpan saat resolve (opsional). Owner rule 2026-09-11: catatan resolve
+  // TETAP tersimpan saat status pindah resolved→open — jangan di-clear lagi.
   const setFields: Record<string, unknown> = { status };
-  if (status === "resolved") setFields.note = note?.trim() ? note.trim() : null;
-  else setFields.note = null;
+  if (note !== undefined) setFields.note = note?.trim() ? note.trim() : null;
   await db.update(reviews).set(setFields).where(eq(reviews.id, id));
   if (status === "resolved") {
     await db.update(reviewAlerts).set({ status: "resolved", resolvedBy: userId, resolvedAt: new Date() }).where(and(eq(reviewAlerts.reviewId, id), eq(reviewAlerts.status, "open")));
   }
-  await createAuditLog({ userId, action: `Changed review status to ${status}`, targetType: "review", targetId: id });
+  await createAuditLog({ userId, action: `Status diubah: ${detail.status} → ${status}`, targetType: "review", targetId: id });
+  return { success: true };
+}
+
+/** Simpan catatan resolve tanpa mengubah status (dipanggil saat admin blur textarea). */
+export async function updateReviewNote(user: ScopeUser, id: number, note: string | null, userId?: number) {
+  const detail = await getReviewDetail(user, id);
+  if (!detail) throw new Error("Review not found");
+  if (user?.role === "viewer") throw new Error("Viewer tidak dapat mengubah catatan.");
+  const db = await requireDb();
+  const clean = note?.trim() ? note.trim() : null;
+  if ((detail.note ?? null) === clean) return { success: true };
+  await db.update(reviews).set({ note: clean }).where(eq(reviews.id, id));
+  await createAuditLog({ userId, action: "Catatan resolve diedit", targetType: "review", targetId: id, metadata: JSON.stringify({ from: detail.note ?? "", to: clean ?? "" }) });
+  return { success: true };
+}
+
+/** Riwayat edit/status sebuah review (sumber: audit_logs). */
+export async function listReviewHistory(user: ScopeUser, id: number) {
+  const detail = await getReviewDetail(user, id);
+  if (!detail) throw new Error("Review not found");
+  const db = await requireDb();
+  return db
+    .select({ id: auditLogs.id, action: auditLogs.action, metadata: auditLogs.metadata, createdAt: auditLogs.createdAt, userName: users.name })
+    .from(auditLogs)
+    .leftJoin(users, eq(auditLogs.userId, users.id))
+    .where(and(eq(auditLogs.targetType, "review"), eq(auditLogs.targetId, id)))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(50);
+}
+
+/** SUPER ADMIN ONLY: koreksi teks entri riwayat. */
+export async function editReviewHistoryEntry(id: number, action: string, userId?: number) {
+  const db = await requireDb();
+  await db.update(auditLogs).set({ action: action.trim().slice(0, 160) }).where(eq(auditLogs.id, id));
+  await createAuditLog({ userId, action: `Edited history entry #${id}`, targetType: "audit_log", targetId: id });
+  return { success: true };
+}
+
+/** SUPER ADMIN ONLY: hapus entri riwayat. */
+export async function deleteReviewHistoryEntry(id: number, userId?: number) {
+  const db = await requireDb();
+  await db.delete(auditLogs).where(eq(auditLogs.id, id));
+  await createAuditLog({ userId, action: `Deleted history entry #${id}`, targetType: "audit_log", targetId: id });
   return { success: true };
 }
 
@@ -463,6 +516,33 @@ export async function assignReview(user: ScopeUser, id: number, branchId: number
   await db.update(reviews).set({ branchId, teamId }).where(eq(reviews.id, id));
   await createAuditLog({ userId, action: `Assigned review to branch #${branchId}${teamId ? ` / team #${teamId}` : ""}`, targetType: "review", targetId: id });
   return { success: true };
+}
+
+/** Riwayat notifikasi untuk bell header: review terbaru + alert terbaru, digabung. */
+export async function listNotifications(user: ScopeUser) {
+  const db = await requireDb();
+  const scope = scopedBranchId(user);
+  const hidden = hiddenStatusesFor(user);
+  const rv = await db
+    .select({ id: reviews.id, receiptNo: reviews.receiptNo, createdAt: reviews.createdAt, status: reviews.status, readAt: reviews.readAt })
+    .from(reviews)
+    .where(scope === undefined ? undefined : eq(reviews.branchId, scope))
+    .orderBy(desc(reviews.id))
+    .limit(30);
+  const al = await db
+    .select({ id: reviewAlerts.id, reviewId: reviewAlerts.reviewId, message: reviewAlerts.message, severity: reviewAlerts.severity, alertStatus: reviewAlerts.status, createdAt: reviewAlerts.createdAt })
+    .from(reviewAlerts)
+    .orderBy(desc(reviewAlerts.id))
+    .limit(15);
+  const items: { kind: "review" | "alert"; id: number; reviewId: number; title: string; sub: string; severity?: string; createdAt: Date; read: boolean }[] = [];
+  for (const r of rv) {
+    if (hidden.has(r.status)) continue;
+    items.push({ kind: "review", id: r.id, reviewId: r.id, title: `Review baru: ${r.receiptNo || "?"}`, sub: r.status === "resolved" ? "sudah resolved" : r.status === "open" ? "status open" : "menunggu tindakan", createdAt: r.createdAt, read: !!r.readAt });
+  }
+  for (const a of al) {
+    items.push({ kind: "alert", id: a.id, reviewId: a.reviewId, title: a.message.slice(0, 80), sub: a.alertStatus === "resolved" ? "alert resolved" : `alert ${a.severity}`, severity: a.severity, createdAt: a.createdAt, read: a.alertStatus === "resolved" });
+  }
+  return items.sort((x, y) => y.createdAt.getTime() - x.createdAt.getTime()).slice(0, 25);
 }
 
 /** Poll murah utk notif "review baru" di admin: 1 baris terbaru (scope user). */

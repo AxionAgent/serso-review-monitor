@@ -84,7 +84,10 @@ export const reviews = mysqlTable(
     serviceRating: int("serviceRating").notNull(),
     comment: text("comment"),
     note: text("note"),
+    // "new" tetap ada di enum (data lama), tapi UI memperlakukannya sebagai Open
+    // + badge "New". readAt = kapan admin pertama kali membuka detail (unread dot).
     status: mysqlEnum("status", ["new", "open", "resolved", "archived"]).default("new").notNull(),
+    readAt: timestamp("readAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },

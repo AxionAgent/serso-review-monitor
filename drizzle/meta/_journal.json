@@ -57,6 +57,13 @@
       "when": 1789063781035,
       "tag": "0007_mixed_zuras",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1789123290194,
+      "tag": "0008_smart_the_professor",
+      "breakpoints": true
     }
   ]
 }

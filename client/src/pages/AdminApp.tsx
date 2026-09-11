@@ -2,7 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Bell, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, FileImage, LayoutDashboard, Loader2, LogIn, LogOut, Menu, QrCode, RefreshCw, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, X } from "lucide-react";
+import { Bell, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, Eye, FileText, FileImage, History, LayoutDashboard, Loader2, LogIn, LogOut, Menu, Pencil, QrCode, RefreshCw, Search, Settings, ShieldAlert, Sparkles, Star, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
@@ -25,6 +25,7 @@ export default function AdminApp() {
   const [location, navigate] = useLocation();
   const active = navItems.find((item) => item.path === location || (item.path !== "/admin" && location.startsWith(item.path))) ?? navItems[0];
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const { user, logout } = useAuth();
   const utils = trpc.useUtils();
   const login = trpc.auth.login.useMutation({ onSuccess: () => utils.auth.me.invalidate() });
@@ -33,14 +34,14 @@ export default function AdminApp() {
     <div className="min-h-screen bg-[#f3f7ff] text-slate-900">
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-[#0f2f5f] text-white transition-transform lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-full flex-col">
-          <div className="flex h-24 items-center gap-3 px-7"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#79a8ff] text-[#0f2f5f]"><MessageMark /></div><div><p className="text-sm font-black tracking-tight">Service Solution</p><p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-100">Experience OS</p></div><button onClick={() => setMobileOpen(false)} className="ml-auto lg:hidden"><X className="h-5 w-5" /></button></div>
+          <div className="flex h-24 items-center gap-3 px-7"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#79a8ff] text-[#0f2f5f]"><MessageMark /></div><div><p className="text-sm font-black tracking-tight">Service Solution</p><p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-100">Experience OS</p><p className="mt-0.5 font-mono text-[10px] text-blue-100/50">v{__APP_VERSION__}</p></div><button onClick={() => setMobileOpen(false)} className="ml-auto lg:hidden"><X className="h-5 w-5" /></button></div>
           <div className="px-4"><p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-100/60">Workspace</p>{navItems.map((item) => { const Icon = item.icon; const isActive = item.path === location; return <Link key={item.path} href={item.path} onClick={() => setMobileOpen(false)} className={`mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${isActive ? "bg-white/15 text-white shadow-sm" : "text-blue-100/70 hover:bg-white/10 hover:text-white"}`}><Icon className={`h-4 w-4 ${isActive ? "text-[#79a8ff]" : ""}`} />{item.label}{item.label === "Alerts" ? <span className="ml-auto rounded-full bg-blue-300/20 px-2 py-0.5 text-[10px] text-blue-100">Live</span> : null}</Link>; })}</div>
           <div className="mt-auto border-t border-white/10 p-4"><div className="mb-3 rounded-2xl bg-white/10 p-3"><p className="text-xs font-semibold text-blue-100">Data health</p><div className="mt-2 flex items-center gap-2 text-[11px] text-blue-100/70"><span className="h-2 w-2 rounded-full bg-[#79a8ff]" /> Database connected</div><div className="mt-1 flex items-center gap-2 text-[11px] text-blue-100/70"><span className="h-2 w-2 rounded-full bg-[#79a8ff]" /> QR routing active</div></div><button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-blue-100/70 hover:bg-white/10 hover:text-white"><LogOut className="h-4 w-4" /> Sign out</button></div>
         </div>
       </aside>
       <NewReviewToasts onOpenReviews={() => { navigate("/admin/reviews"); utils.admin.reviews.invalidate(); }} />
       {mobileOpen ? <button onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-blue-950/30 lg:hidden" aria-label="Close menu" /> : null}
-      <div className="lg:pl-72"><header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/70 bg-white/65 px-5 backdrop-blur-2xl sm:px-8"><div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="rounded-xl p-2 hover:bg-white/80 lg:hidden"><Menu className="h-5 w-5" /></button><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2f6fed]">Customer experience</p><h1 className="text-lg font-bold tracking-tight">{active.label}</h1></div></div><div className="flex items-center gap-3"><div className="hidden items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-sm text-slate-400 shadow-sm backdrop-blur-xl md:flex"><Search className="h-4 w-4" /><span>Search reviews...</span><kbd className="ml-5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px]">⌘ K</kbd></div><button className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/80 bg-white/70 text-slate-500 shadow-sm backdrop-blur-xl"><Bell className="h-4 w-4" /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-blue-500" /></button><div className="hidden h-10 w-10 place-items-center rounded-xl bg-[#2f6fed] text-sm font-bold text-white shadow-lg shadow-blue-500/20 sm:grid">{user.name?.slice(0, 1).toUpperCase() ?? "A"}</div></div></header><main className="mx-auto max-w-[1440px] p-5 sm:p-8"><PageContent path={location} /></main></div>
+      <div className="lg:pl-72"><header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/70 bg-white/65 px-5 backdrop-blur-2xl sm:px-8"><div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="rounded-xl p-2 hover:bg-white/80 lg:hidden"><Menu className="h-5 w-5" /></button><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2f6fed]">Customer experience</p><h1 className="text-lg font-bold tracking-tight">{active.label}</h1></div></div><div className="flex items-center gap-3"><NotificationBell onOpenReview={(id) => { navigate("/admin/reviews"); setDetailId(id); utils.admin.reviews.invalidate(); }} /><div className="hidden h-10 w-10 place-items-center rounded-xl bg-[#2f6fed] text-sm font-bold text-white shadow-lg shadow-blue-500/20 sm:grid">{user.name?.slice(0, 1).toUpperCase() ?? "A"}</div></div></header><main className="mx-auto max-w-[1440px] p-5 sm:p-8"><PageContent path={location} detailId={detailId} onDetailConsumed={() => setDetailId(null)} /></main></div>
     </div>
   );
 }
@@ -74,13 +75,70 @@ function NewReviewToasts({ onOpenReviews }: { onOpenReviews: () => void }) {
   return null;
 }
 
+/** Item 5 owner: dropdown mana pun menutup saat klik di luar area-nya. */
+function useClickOutside(onOutside: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onOutside();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onOutside]);
+  return ref;
+}
+
+/**
+ * Item 9 owner: bell = riwayat notifikasi (review baru masuk + alert),
+ * bukan tombol mati. Poll 15s; badge jumlah unread. Search box header dibuang.
+ */
+function NotificationBell({ onOpenReview }: { onOpenReview: (id: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useClickOutside(() => setOpen(false));
+  const { data } = trpc.admin.notifications.useQuery(undefined, { refetchInterval: 15_000 });
+  const items = data ?? [];
+  const unread = items.filter((i) => !i.read).length;
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen((v) => !v)} className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/80 bg-white/70 text-slate-500 shadow-sm backdrop-blur-xl">
+        <Bell className="h-4 w-4" />
+        {unread ? <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">{unread > 9 ? "9+" : unread}</span> : <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-blue-500" />}
+      </button>
+      {open ? (
+        <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <p className="text-sm font-bold text-slate-900">Notifikasi</p>
+            <p className="text-[11px] text-slate-400">{unread ? `${unread} belum dibaca` : "semua terbaca"}</p>
+          </div>
+          <div className="max-h-80 overflow-y-auto">
+            {!items.length ? <p className="px-4 py-8 text-center text-xs text-slate-400">Belum ada notifikasi.</p> : null}
+            {items.map((item) => (
+              <button
+                key={`${item.kind}-${item.id}`}
+                onClick={() => { setOpen(false); onOpenReview(item.reviewId); }}
+                className="flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3 text-left hover:bg-slate-50"
+              >
+                <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${item.read ? "bg-slate-200" : item.kind === "alert" ? "bg-rose-500" : "bg-blue-500"}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-bold text-slate-800">{item.kind === "alert" ? `Alert · ${item.title}` : item.title}</span>
+                  <span className="block text-[11px] text-slate-400">{item.sub} · {moneyDateTime(item.createdAt)}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function LoginGate({ isPending, error, onLogin }: { isPending: boolean; error?: string; onLogin: (username: string, password: string) => void }) {
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
   return <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#dbe7ff,transparent_42%),linear-gradient(135deg,#f8fbff,#eaf2ff)] px-5 py-10"><div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center justify-center"><form onSubmit={(event) => { event.preventDefault(); onLogin(username, password); }} className="w-full rounded-[2rem] border border-white/80 bg-white/65 p-8 shadow-[0_30px_100px_-30px_rgba(37,99,235,.45)] backdrop-blur-2xl"><div className="mb-8 flex items-center gap-3"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#2f6fed] text-white shadow-lg shadow-blue-500/25"><LogIn className="h-5 w-5" /></div><div><p className="text-sm font-black text-[#0f2f5f]">Service Solution</p><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2f6fed]">Admin workspace</p></div></div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f6fed]">Local access</p><h1 className="mt-2 text-3xl font-bold tracking-tight text-[#0f2f5f]">Welcome back</h1><p className="mt-3 text-sm leading-6 text-slate-500">Sign in with the local workspace credentials to manage reviews, alerts, and branches.</p><div className="mt-8 space-y-4"><Input label="Username" value={username} onChange={setUsername} placeholder="admin" /><Input label="Password" value={password} onChange={setPassword} placeholder="admin" /></div>{error ? <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{error}</p> : null}<button disabled={isPending} className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2f6fed] text-sm font-bold text-white shadow-lg shadow-blue-500/25 disabled:opacity-60">{isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Sign in</button><p className="mt-5 text-center text-xs text-slate-400">Sign in menggunakan kredensial yang diberikan administrator.</p></form></div></div>;
 }
-function PageContent({ path }: { path: string }) {
-  if (path === "/admin/reviews") return <ReviewsPage />;
+function PageContent({ path, detailId, onDetailConsumed }: { path: string; detailId: number | null; onDetailConsumed: () => void }) {
+  if (path === "/admin/reviews") return <ReviewsPage externalDetailId={detailId} onExternalConsumed={onDetailConsumed} />;
   if (path === "/admin/alerts") return <AlertsPage />;
   if (path === "/admin/qr-codes") return <QRCodesPage />;
   if (path === "/admin/analytics") return <AnalyticsPage />;
@@ -99,8 +157,12 @@ function OverviewPage() {
 function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: number; onClose: () => void; onStatusChange: () => void }) {
   const { data: detail, isLoading } = trpc.admin.review.useQuery({ id: reviewId });
   const update = trpc.admin.updateReviewStatus.useMutation();
+  const saveNote = trpc.admin.updateReviewNote.useMutation();
+  const markRead = trpc.admin.markReviewRead.useMutation();
+  const utils = trpc.useUtils();
   const { data: currentUser } = trpc.auth.me.useQuery();
   const [resolveNote, setResolveNote] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
   // Hanya super_admin yang boleh archive (V2: privilege admin tidak termasuk archive)
   const canArchive = currentUser?.role === "super_admin";
 
@@ -108,6 +170,21 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
     // Isi textarea dengan note tersimpan kalau review sudah pernah di-resolve
     if (detail?.note) setResolveNote(detail.note);
   }, [detail?.note]);
+
+  useEffect(() => {
+    // Buka detail = dianggap dibaca -> unread dot hilang (owner request item 1).
+    if (detail && detail.status === "new" && !detail.readAt) {
+      markRead.mutate({ id: detail.id }, { onSuccess: () => { utils.admin.reviews.invalidate(); utils.admin.review.invalidate({ id: detail.id }); } });
+    }
+  }, [detail?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Catatan resolve: simpan juga saat admin blur textarea tanpa ganti status (item 2).
+  const commitNote = () => {
+    if (!detail) return;
+    const next = resolveNote.trim() || null;
+    if ((detail.note ?? null) === next) return;
+    saveNote.mutate({ id: detail.id, note: next }, { onSuccess: () => { utils.admin.review.invalidate({ id: detail.id }); utils.admin.reviews.invalidate(); utils.admin.reviewHistory.invalidate({ id: detail.id }); } });
+  };
 
   if (isLoading || !detail) {
     return (
@@ -132,16 +209,17 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
 
   const handleStatus = (status: "new" | "open" | "resolved" | "archived") => {
     update.mutate(
-      { id: detail.id, status, note: status === "resolved" ? resolveNote || null : null },
+      // note dikirim hanya saat resolve; status lain jangan kirim note
+      // supaya server tidak menyentuh catatan tersimpan (item 2: note persist).
+      { id: detail.id, status, ...(status === "resolved" ? { note: resolveNote.trim() || null } : {}) },
       { onSuccess: () => onStatusChange() }
     );
   };
-  // V2 status flow: admin hanya lihat New/Open/Resolved (3 button), Archived disembunyikan.
-  // Admin bisa Open ↔ Resolved. New → Open/Resolved (sekali jalan), gak bisa balik ke New.
-  // Super admin melihat New/Open/Resolved/Archived.
+  // V2 UI: status efektif cuma Open/Resolved (+Archived utk super admin).
+  // "new" tidak lagi jadi tombol — ia badge "New" di samping Open.
   const statusOptions: ("new" | "open" | "resolved" | "archived")[] = canArchive
-    ? ["new", "open", "resolved", "archived"]
-    : ["new", "open", "resolved"];
+    ? ["open", "resolved", "archived"]
+    : ["open", "resolved"];
   // Bukan super admin: gak bisa archive, gak bisa balik ke new (once resolved)
   // Cermin aturan server (db.ts::updateReviewStatus). Server = sumber kebenaran:
   //   invariant semua role : resolved/archived ↛ new
@@ -154,6 +232,8 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
     return true;
   };
   const isLocked = (st: string) => !canSet(st as never);
+  // "new" = secara efektif Open (+badge New). Dipakai utk highlight tombol status aktif.
+  const effectiveStatus = detail.status === "new" ? "open" : detail.status;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
@@ -163,6 +243,9 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
             <div className="flex items-center gap-3">
               <span className="text-xl font-bold text-slate-900">{detail.receiptNo}</span>
               <StatusBadge status={detail.status} />
+              <button onClick={() => setHistoryOpen(true)} title="Riwayat perubahan" className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-500 hover:border-[#2f6fed] hover:text-[#2f6fed]">
+                <History className="h-3.5 w-3.5" /> History
+              </button>
             </div>
             <p className="mt-1 text-xs text-slate-400">ID Review #{detail.id} · Diterima pada {moneyDateTime(detail.createdAt)}</p>
           </div>
@@ -171,19 +254,9 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 rounded-2xl bg-slate-50 p-4 text-xs">
-          <div>
-            <span className="text-slate-400 font-medium">Store</span>
-            <p className="font-bold text-slate-800 mt-0.5">{detail.storeName ?? detail.branch?.name ?? "N/A"}</p>
-          </div>
-          <div>
-            <span className="text-slate-400 font-medium">Tim Instalasi</span>
-            <p className="font-bold text-slate-800 mt-0.5">{detail.team?.name ?? "Unassigned"}</p>
-          </div>
-          <div>
-            <span className="text-slate-400 font-medium">Sumber QR</span>
-            <p className="font-bold text-slate-800 mt-0.5">{detail.qr?.name ?? "Direct"}</p>
-          </div>
+        <div className="rounded-2xl bg-slate-50 p-4 text-xs">
+          <span className="text-slate-400 font-medium">Store</span>
+          <p className="font-bold text-slate-800 mt-0.5">{detail.storeName ?? detail.branch?.name ?? "N/A"}</p>
         </div>
 
         <div>
@@ -239,11 +312,12 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
           <textarea
             value={resolveNote}
             onChange={(e) => setResolveNote(e.target.value)}
+            onBlur={commitNote}
             rows={3}
-            placeholder="Tulis catatan tindak lanjut di sini… (dikirim saat status diubah ke Resolved)"
+            placeholder="Tulis catatan tindak lanjut di sini… (tersimpan otomatis saat keluar dari kolom)"
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-[#2f6fed] resize-y"
           />
-          {detail.note ? <p className="mt-2 text-[11px] text-slate-400">Note tersimpan: <span className="text-slate-600">{detail.note}</span></p> : null}
+          {saveNote.isSuccess && (detail.note ?? null) === (resolveNote.trim() || null) ? <p className="mt-2 text-[11px] font-semibold text-emerald-600">Catatan tersimpan.</p> : detail.note ? <p className="mt-2 text-[11px] text-slate-400">Note tersimpan: <span className="text-slate-600">{detail.note}</span></p> : null}
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
@@ -253,20 +327,18 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
               <button
                 key={st}
                 disabled={
-                  detail.status === st ||
+                  effectiveStatus === st ||
                   update.isPending ||
                   !canSet(st)
                 }
                 title={
                   !canSet(st) && st === "archived"
                     ? "Hanya super admin yang dapat meng-archive review"
-                    : !canSet(st) && st === "new"
-                      ? "Review yang sudah diproses tidak dapat dikembalikan ke New"
-                      : undefined
+                    : undefined
                 }
                 onClick={() => handleStatus(st)}
                 className={`rounded-xl px-3 py-1.5 text-xs font-bold capitalize transition ${
-                  detail.status === st
+                  effectiveStatus === st
                     ? "bg-[#2f6fed] text-white"
                     : isLocked(st)
                       ? "cursor-not-allowed bg-slate-200 text-slate-400 line-through decoration-slate-300"
@@ -278,12 +350,76 @@ function ReviewDetailModal({ reviewId, onClose, onStatusChange }: { reviewId: nu
             ))}
           </div>
         </div>
+        {historyOpen ? <ReviewHistoryModal reviewId={detail.id} isSuperAdmin={canArchive} onClose={() => setHistoryOpen(false)} /> : null}
       </div>
     </div>
   );
 }
 
-function ReviewsPage() {
+/**
+ * Riwayat perubahan sebuah review (audit log). Item 3 owner: edit/hapus entri
+ * HANYA super admin — tombolnya tidak dirender untuk role lain, dan server
+ * memaksa superAdminProcedure (lapisan kedua).
+ */
+function ReviewHistoryModal({ reviewId, isSuperAdmin, onClose }: { reviewId: number; isSuperAdmin: boolean; onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const { data: entries, isLoading } = trpc.admin.reviewHistory.useQuery({ id: reviewId });
+  const editEntry = trpc.admin.editReviewHistory.useMutation({ onSuccess: () => utils.admin.reviewHistory.invalidate({ id: reviewId }) });
+  const deleteEntry = trpc.admin.deleteReviewHistory.useMutation({ onSuccess: () => utils.admin.reviewHistory.invalidate({ id: reviewId }) });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History className="h-4 w-4 text-[#2f6fed]" />
+            <h3 className="text-sm font-bold text-slate-900">Riwayat Perubahan</h3>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center gap-2 py-6 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin text-[#2f6fed]" /> Memuat riwayat…</div>
+        ) : !entries?.length ? (
+          <p className="py-6 text-center text-sm text-slate-400">Belum ada riwayat tercatat untuk review ini.</p>
+        ) : (
+          <ul className="space-y-3">
+            {entries.map((entry) => (
+              <li key={entry.id} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                {editingId === entry.id ? (
+                  <div className="space-y-2">
+                    <input value={editText} onChange={(e) => setEditText(e.target.value)} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm outline-none focus:border-[#2f6fed]" />
+                    <div className="flex gap-2">
+                      <button disabled={!editText.trim() || editEntry.isPending} onClick={() => { editEntry.mutate({ id: entry.id, action: editText }); setEditingId(null); }} className="rounded-lg bg-[#2f6fed] px-3 py-1 text-xs font-bold text-white disabled:opacity-50">Simpan</button>
+                      <button onClick={() => setEditingId(null)} className="rounded-lg bg-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Batal</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{entry.action}</p>
+                      {entry.metadata ? <p className="mt-0.5 break-words text-[11px] text-slate-400">{entry.metadata}</p> : null}
+                      <p className="mt-1 text-[11px] text-slate-400">{entry.userName ?? "sistem"} · {moneyDateTime(entry.createdAt)}</p>
+                    </div>
+                    {isSuperAdmin ? (
+                      <div className="flex shrink-0 gap-1">
+                        <button onClick={() => { setEditingId(entry.id); setEditText(entry.action); }} className="rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-[#2f6fed]" title="Edit entri"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => { if (window.confirm("Hapus entri riwayat ini?")) deleteEntry.mutate({ id: entry.id }); }} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" title="Hapus entri"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReviewsPage({ externalDetailId, onExternalConsumed }: { externalDetailId: number | null; onExternalConsumed: () => void }) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"new" | "open" | "resolved" | "archived" | undefined>();
   const [storeCode, setStoreCode] = useState<string | undefined>();
@@ -308,7 +444,7 @@ function ReviewsPage() {
   const totalPages = reviewsResponse?.totalPages ?? 1;
   const storeOptions = reviewsResponse?.storeOptions ?? [];
 
-  const statusRank: Record<string, number> = { new: 0, open: 1, resolved: 2, archived: 3 };
+  const statusRank: Record<string, number> = { new: 1, open: 1, resolved: 2, archived: 3 };
   // sortKey null = urutan default server (terbaru dulu). Jangan di-sort ulang di client.
   const sortedReviews = sortKey === null ? reviews : [...reviews].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -344,6 +480,17 @@ function ReviewsPage() {
       setDetailReviewId(Number(idParam));
     }
   }, []);
+
+  // Bell notifikasi -> klik item -> buka modal detail review-nya dari halaman ini.
+  useEffect(() => {
+    if (externalDetailId) {
+      setDetailReviewId(externalDetailId);
+      onExternalConsumed();
+    }
+  }, [externalDetailId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Item 5: dropdown Export menutup saat klik di luar area-nya.
+  const exportRef = useClickOutside(() => setExportOpen(false));
 
   // JANGAN unmount saat loading (bikin input hilang & keyboard Android nutup).
   // Data lama tetap tampil; hanya spinner halus di area list.
@@ -388,7 +535,7 @@ function ReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeading eyebrow="Voice of customer" title="Reviews" subtitle="Review every customer signal and turn feedback into action." action={<div className="flex flex-wrap gap-2"><div className="relative"><button onClick={() => setExportOpen(!exportOpen)} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/75 px-4 text-sm font-bold text-slate-700"><Download className="h-4 w-4" /> Export <ChevronDown className={`h-4 w-4 transition ${exportOpen ? "rotate-180" : ""}`} /></button>{exportOpen ? <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl"><button onClick={() => { setExportFormat("xlsx"); download("xlsx"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-emerald-600" /> XLSX (.xlsx)</button><button onClick={() => { setExportFormat("ods"); download("ods"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-orange-500" /> ODS (.ods)</button><button onClick={() => { setExportFormat("csv"); download("csv"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-blue-500" /> CSV (.csv)</button></div> : null}</div>{canDelete ? <><button disabled={!selected.length || deleteOne.isPending} onClick={removeSelected} className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-600 disabled:opacity-40"><Trash2 className="h-4 w-4" /> Delete selected</button><button disabled={deleteAll.isPending} onClick={removeAll} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-bold text-white disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete all</button></> : null}</div>} />
+      <PageHeading eyebrow="Voice of customer" title="Reviews" subtitle="Review every customer signal and turn feedback into action." action={<div className="flex flex-wrap gap-2"><div className="relative" ref={exportRef}><button onClick={() => setExportOpen(!exportOpen)} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/75 px-4 text-sm font-bold text-slate-700"><Download className="h-4 w-4" /> Export <ChevronDown className={`h-4 w-4 transition ${exportOpen ? "rotate-180" : ""}`} /></button>{exportOpen ? <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl"><button onClick={() => { setExportFormat("xlsx"); download("xlsx"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-emerald-600" /> XLSX (.xlsx)</button><button onClick={() => { setExportFormat("ods"); download("ods"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-orange-500" /> ODS (.ods)</button><button onClick={() => { setExportFormat("csv"); download("csv"); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FileText className="h-4 w-4 text-blue-500" /> CSV (.csv)</button></div> : null}</div>{canDelete ? <><button disabled={!selected.length || deleteOne.isPending} onClick={removeSelected} className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-600 disabled:opacity-40"><Trash2 className="h-4 w-4" /> Delete selected</button><button disabled={deleteAll.isPending} onClick={removeAll} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-bold text-white disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete all</button></> : null}</div>} />
       <div className="flex flex-wrap gap-3 rounded-2xl border border-white/70 bg-white/75 p-4 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]">
         <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3">
           <Search className="h-4 w-4 text-slate-400" />
@@ -400,7 +547,6 @@ function ReviewsPage() {
         </select>
         <select value={status ?? ""} onChange={(e) => { setStatus((e.target.value || undefined) as typeof status); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-600">
           <option value="">All statuses</option>
-          <option value="new">New</option>
           <option value="open">Open</option>
           <option value="resolved">Resolved</option>
           {canDelete ? <option value="archived">Archived</option> : null}
@@ -430,7 +576,7 @@ function ReviewsPage() {
                   <td className="px-5 py-4"><p className="font-medium text-slate-700">{review.storeName ?? review.branchName ?? "Unassigned"}</p><p className="text-xs text-slate-400">{review.storeCode ? `${review.storeCode} · ${review.qrName}` : review.qrName}</p></td>
                   <td className="px-5 py-4"><p className="font-bold text-slate-800">{review.overall.toFixed(2)}</p><p className="text-[11px] tracking-tight text-amber-400">{stars(review.overall)}</p></td>
                   <td className="max-w-[260px] truncate px-5 py-4 text-slate-500">{review.comment || "—"}</td>
-                  <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><StatusBadge status={review.status} /></td>
+                  <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><StatusBadge status={review.status} unread={review.unread} /></td>
                   <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setDetailReviewId(review.id)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#2f6fed] hover:text-[#2f6fed]">
@@ -499,6 +645,19 @@ function AlertsPage() {
   const [resolveAlertId, setResolveAlertId] = useState<number | null>(null);
   // V2: admin harus lihat isi review dulu sebelum mark resolved
   const [detailAlertId, setDetailAlertId] = useState<number | null>(null);
+  // Item 8 owner: search + pagination biar daftar alert panjang tetap mudah dibaca.
+  const [alertSearch, setAlertSearch] = useState("");
+  const [alertPage, setAlertPage] = useState(1);
+  const alertPageSize = 10;
+
+  const filteredAlerts = useMemo(() => {
+    if (!alerts) return [];
+    const q = alertSearch.trim().toLowerCase();
+    if (!q) return alerts;
+    return alerts.filter((a) => `${a.receiptNo} ${a.message} ${a.comment ?? ""} ${a.storeName ?? ""} ${a.branchName ?? ""}`.toLowerCase().includes(q));
+  }, [alerts, alertSearch]);
+  const alertTotalPages = Math.ceil(filteredAlerts.length / alertPageSize) || 1;
+  const pagedAlerts = filteredAlerts.slice((Math.min(alertPage, alertTotalPages) - 1) * alertPageSize, Math.min(alertPage, alertTotalPages) * alertPageSize);
 
   if (isLoading || !alerts) return <Loading />;
 
@@ -550,8 +709,15 @@ function AlertsPage() {
           tone="green"
         />
       </div>
+      <div className="flex items-center gap-2 rounded-2xl border border-white/70 bg-white/75 p-3 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]">
+        <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3">
+          <Search className="h-4 w-4 text-slate-400" />
+          <input value={alertSearch} onChange={(e) => { setAlertSearch(e.target.value); setAlertPage(1); }} placeholder="Search receipt, pesan alert, komentar, store…" className="h-10 w-full text-sm outline-none" />
+        </div>
+        {alertSearch ? <button onClick={() => { setAlertSearch(""); setAlertPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 hover:bg-slate-50">Reset</button> : null}
+      </div>
       <div className="space-y-3">
-        {alerts.map((alert) => (
+        {pagedAlerts.map((alert) => (
           <div
             key={alert.id}
             className={`flex flex-wrap items-center gap-4 rounded-2xl border bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] ${
@@ -618,10 +784,20 @@ function AlertsPage() {
             </div>
           </div>
         ))}
-        {!alerts.length ? (
-          <Empty text="Tidak ada alert saat ini. Semua aman." />
+        {!pagedAlerts.length ? (
+          <Empty text={alertSearch ? "Tidak ada alert yang cocok dengan pencarian." : "Tidak ada alert saat ini. Semua aman."} />
         ) : null}
       </div>
+      {filteredAlerts.length > alertPageSize ? (
+        <div className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/75 px-5 py-3 text-xs text-slate-500 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]">
+          <span>Menampilkan {(Math.min(alertPage, alertTotalPages) - 1) * alertPageSize + 1}-{Math.min(Math.min(alertPage, alertTotalPages) * alertPageSize, filteredAlerts.length)} dari {filteredAlerts.length} alert</span>
+          <div className="flex items-center gap-2">
+            <button disabled={alertPage <= 1} onClick={() => setAlertPage((p) => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /> Prev</button>
+            <span className="font-semibold text-slate-600">Halaman {Math.min(alertPage, alertTotalPages)} dari {alertTotalPages}</span>
+            <button disabled={alertPage >= alertTotalPages} onClick={() => setAlertPage((p) => Math.min(alertTotalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40">Next <ChevronRight className="h-4 w-4" /></button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Resolve Alert Modal */}
       {modalOpen && resolveAlertId && (
@@ -688,6 +864,7 @@ function QRCodesPage() {
   const utils = trpc.useUtils();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadRef = useClickOutside(() => setDownloadOpen(false));
 
   if (isLoading || !qrs) return <Loading />;
   const universal = qrs.find((row) => !row.branchName) ?? qrs[0];
@@ -779,7 +956,7 @@ function QRCodesPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <div className="relative">
+          <div className="relative" ref={downloadRef}>
             <button onClick={() => setDownloadOpen(!downloadOpen)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
               <Download className="h-3.5 w-3.5" /> Download <ChevronDown className={`h-3.5 w-3.5 transition ${downloadOpen ? "rotate-180" : ""}`} />
             </button>
@@ -820,9 +997,10 @@ function AnalyticsPage() {
     <div className="space-y-7">
       <PageHeading eyebrow="Performance intelligence" title="Analytics & Leaderboard" subtitle={`Performa setiap store berdasarkan jumlah review dan rerata rating (threshold ${Number(data.threshold).toFixed(1)}).`} action={<button onClick={() => recap.refetch()} disabled={recap.isFetching} className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#dbe7ff] bg-white/80 px-4 text-sm font-bold text-[#0f2f5f] transition hover:bg-[#f6f9ff] disabled:opacity-60"><RefreshCw className={recap.isFetching ? "h-4 w-4 animate-spin text-[#2f6fed]" : "h-4 w-4 text-[#2f6fed]"} /> Refresh</button>} />
       <div className="rounded-2xl border border-[#dbe7ff] bg-[#f6f9ff] p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)] sm:p-6">
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-4 flex items-center gap-2">
           <FileText className="h-4 w-4 text-[#2f6fed]" />
-          <p className="text-sm font-bold text-slate-900">Summary Review (7 hari terakhir)</p>
+          <p className="text-sm font-bold text-slate-900">Summary Review</p>
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-[#2f6fed]">7 hari terakhir</span>
         </div>
         {recap.isError ? (
           <p className="text-sm text-rose-600">Gagal memuat summary: {recap.error.message}</p>
@@ -830,8 +1008,40 @@ function AnalyticsPage() {
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin text-[#2f6fed]" /> Memuat summary…
           </div>
+        ) : recap.data?.stats ? (
+          (() => {
+            const st = recap.data.stats;
+            const f2 = (n: number) => n.toFixed(2);
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="rounded-xl bg-white/80 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total review</p><p className="mt-1 text-2xl font-bold text-slate-900">{st.total}</p></div>
+                  <div className="rounded-xl bg-white/80 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rata-rata</p><p className="mt-1 text-2xl font-bold text-[#2f6fed]">{f2(st.average)}<span className="text-sm font-semibold text-slate-400">/5</span></p></div>
+                  <div className="rounded-xl bg-white/80 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Positif</p><p className="mt-1 text-2xl font-bold text-emerald-600">{st.good}</p></div>
+                  <div className="rounded-xl bg-white/80 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Belum di-resolve</p><p className="mt-1 text-2xl font-bold text-amber-600">{st.pending}</p></div>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-[#dbe7ff] bg-white/70">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-white/80 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <tr><th className="px-4 py-2.5">Store</th><th className="px-4 py-2.5 text-right">Review</th><th className="px-4 py-2.5 text-right">Rata-rata</th><th className="px-4 py-2.5 text-right">Pending</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {st.stores.map((row) => (
+                        <tr key={row.name}>
+                          <td className="px-4 py-2.5 font-semibold text-slate-800">{row.name}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums text-slate-600">{row.n}</td>
+                          <td className="px-4 py-2.5 text-right font-bold tabular-nums text-slate-900">{f2(row.average)}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{row.pending ? <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">{row.pending}</span> : <span className="text-xs text-slate-300">—</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()
         ) : (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{recap.data?.summary}</p>
+          <p className="text-sm text-slate-500">{recap.data?.summary}</p>
         )}
       </div>
       <div className="grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
@@ -949,7 +1159,25 @@ function SettingsPage() {
 }
 function PageHeading({ eyebrow, title, subtitle, action }: { eyebrow: string; title: string; subtitle: string; action?: React.ReactNode }) { return <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f6fed]">{eyebrow}</p><h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{title}</h2><p className="mt-2 text-sm text-slate-500">{subtitle}</p></div>{action}</div>; }
 function SummaryCard({ label, value, tone }: { label: string; value: number; tone: "rose" | "amber" | "green" }) { const style = { rose: "text-rose-600 bg-rose-50", amber: "text-amber-600 bg-amber-50", green: "text-emerald-600 bg-emerald-50" }[tone]; return <div className="rounded-2xl border border-white/70 bg-white/75 backdrop-blur-xl p-5 shadow-[0_18px_60px_-28px_rgba(37,99,235,.35)]"><div className={`mb-4 grid h-10 w-10 place-items-center rounded-xl ${style}`}><Bell className="h-4 w-4" /></div><p className="text-3xl font-bold text-slate-900">{value}</p><p className="mt-1 text-xs text-slate-400">{label}</p></div>; }
-function StatusBadge({ status }: { status: string }) { const style = status === "new" ? "bg-sky-50 text-sky-700" : status === "open" ? "bg-amber-50 text-amber-700" : status === "resolved" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"; return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${style}`}>{status}</span>; }
+function StatusBadge({ status, unread }: { status: string; unread?: boolean }) {
+  // Owner 2026-09-11: status UI cuma Open/Resolved. "new" tampil sebagai Open +
+  // badge kecil "New"; unread (belum pernah dibuka) = titik biru.
+  if (status === "new")
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold capitalize text-amber-700">open</span>
+        <span className="inline-flex rounded-full bg-sky-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-sky-700">New</span>
+        {unread ? <span className="h-2 w-2 rounded-full bg-blue-500" title="Belum dibuka" /> : null}
+      </span>
+    );
+  const style = status === "open" ? "bg-amber-50 text-amber-700" : status === "resolved" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600";
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {unread ? <span className="h-2 w-2 rounded-full bg-blue-500" title="Belum dibuka" /> : null}
+      <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${style}`}>{status}</span>
+    </span>
+  );
+}
 function Input({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) { return <label className="block space-y-2 text-sm font-semibold text-slate-700">{label}<input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="mt-1 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-normal outline-none focus:border-[#2f6fed] focus:ring-4 focus:ring-[#2f6fed]/10" /></label>; }
 function FormCard({ title, onSubmit, children }: { title: string; onSubmit: (e: React.FormEvent) => void; children: React.ReactNode }) { return <form onSubmit={onSubmit} className="grid gap-4 rounded-2xl border border-[#cfe0ff] bg-[#f6f9ff] p-5 sm:grid-cols-2"><div className="sm:col-span-2"><p className="text-sm font-bold text-[#0f2f5f]">{title}</p></div>{children}</form>; }
 function Empty({ text }: { text: string }) { return <div className="px-6 py-12 text-center text-sm text-slate-400">{text}</div>; }
