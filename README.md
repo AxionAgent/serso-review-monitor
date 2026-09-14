@@ -1,186 +1,212 @@
-# Serso Experience OS — Customer Review Monitoring
+# Serso Experience OS
 
-Aplikasi monitoring review pelanggan multi-store untuk instalasi layanan (pool/branch). Pelanggan scan QR → isi form review (1–5 ⭐, 3 dimensi + komentar) → admin pantau, tandai, dan resolve lewat dashboard.
+Sistem monitoring review pelanggan untuk instalasi layanan (pool/branch), dibangun untuk kebutuhan operasional harian.
 
-Status proyek: **satu server production VPS Oracle ARM64**. Dua instance jalan berdampingan dari repo yang sama:
+Alurnya sederhana. Pelanggan memindai satu QR all-in-one, mengisi form rating satu sampai lima bintang pada tiga dimensi (pemasangan, grooming, pelayanan) disertai komentar dan nomor struk. Admin menerima hasilnya di dashboard: menandai status, memberi catatan, dan menindaklanjuti alert review negatif sampai tuntas.
+
+## Instance
+
+Dua instance berjalan berdampingan di satu VPS dari repo yang sama.
 
 | Instance | Domain | Container | Port host | Database |
 |----------|--------|-----------|-----------|----------|
 | v1 | review.kemscloud.web.id | `serso-review-monitor-app-1` | `${PORT:-3000}` | `serso` |
-| v2 (aktif dikembangkan) | reviewv2.kemscloud.web.id | `serso-review-monitor-app-full-v2-1` | `${PORT_FULL_V2:-9313}` | `serso_v2` |
+| v2 | reviewv2.kemscloud.web.id | `serso-review-monitor-app-full-v2-1` | `${PORT_FULL_V2:-9313}` | `serso_v2` |
 
-Branch kerja aktif: **`fix/deploy-runtime`** (dipush ke fork `AxionAgent/serso-review-monitor`; PR #1 → `codex31/serso-review-monitor@main`). Branch `v2` lokal identik dengan `fix/deploy-runtime`.
+Seluruh pengembangan sekarang berpusat di v2. Cabang kerja aktif adalah `fix/deploy-runtime` (fork `AxionAgent/serso-review-monitor`), diajukan ke `codex31/serso-review-monitor` lewat PR #1. Cabang lokal `v2` berisi commit yang identik.
 
-## Stack
+## Teknologi
 
-- Frontend: React + Vite + wouter + Tailwind CSS v4 + shadcn/ui + lucide-react + TanStack React Query
-- Backend: Express + tRPC v11 (single router), sesi via cookie `kt_sess` (JWT)
-- Database: MySQL 8 (drizzle-orm + mysql2); 10 file migrasi di `drizzle/`
-- Auth: OAuth (Replit provider, opsional) **atau** login lokal admin/superadmin via env
-- Deploy: Docker Compose (satu `Dockerfile` multi-stage) + Caddy reverse proxy + Cloudflare
+| Lapisan | Pilihan |
+|---------|---------|
+| Frontend | React, Vite, wouter, Tailwind CSS v4, shadcn/ui, TanStack React Query |
+| Backend | Express dengan tRPC v11 dalam satu router |
+| Database | MySQL 8 melalui drizzle-orm, 10 migrasi tersimpan di `drizzle/` |
+| Deploy | Docker Compose, satu Dockerfile multi-stage, Caddy reverse proxy, Cloudflare |
 
 ## Arsitektur
 
 ```
 Client (React SPA, dark/light) -> Express -> tRPC router (server/routers.ts)
                                              v
-                           server/db.ts: akses MySQL + role scoping
+                           server/db.ts: akses MySQL + scoping role
                                              v
-                  MySQL (serso / serso_v2) -- tabel inti:
-                  users, branches, teams, qr_codes, reviews, review_alerts, audit_logs, settings
+        MySQL (serso / serso_v2). Tabel: users, branches, teams, qr_codes,
+        reviews, review_alerts, audit_logs, settings
 ```
 
-- `server/store.ts` — katalog 742 store (`server/store.json`). Kode store di-parse dari `receiptNo` (mis. `MB.5A.20260910.106` → store `5A` = HCIR SELMA SINGKAWANG G M). Kode tak dikenal → label **"Unknown"**.
-- `server/analytics.ts` — "Summary Review": render deterministik sisi server (LLM sudah dibuang), window 7 hari, exclude branch berkode TEST.
-- `server/v2/server.ts` — server v2 minimalis (`/healthz` saja, tanpa instrumentasi metrics).
+Tiga modul yang membedakan perilaku sistem dari CRUD biasa:
+
+- `server/store.ts` dan `server/store.json`. Katalog 742 store. Kode store diekstrak dari `receiptNo`; misalnya tiket `MB.5A.20260910.106` menunjuk store `5A`, yaitu HCIR SELMA SINGKAWANG G M. Kode yang tidak ada di katalog diberi label "Unknown".
+- `server/analytics.ts`. Pembuat "Summary Review": rekap mingguan dirender deterministik di sisi server, tanpa LLM. Window 7 hari dan cabang berkode TEST dikecualikan.
+- `server/v2/server.ts`. Server v2 yang sangat tipis; hanya menyediakan `/healthz`, tanpa instrumentasi metrics.
 
 ## Fitur
 
-### Publik (form review)
-- Satu QR all-in-one mengarah ke `/r/:code` → form rating: 3 dimensi (pemasangan, grooming, pelayanan) + komentar + nomor struk.
-- Submission publik memvalidasi QR aktif, menolak status invalid, auto-create alert bila rating overall di bawah threshold.
+### Formulir publik
 
-### Autentikasi & role admin
-- Login lokal username/password: `ADMIN_USERNAME/ADMIN_PASSWORD` (admin) dan `SUPERADMIN_PASSWORD` (super admin) via env. Input password bertipe `password`, placeholder kosong.
-- Sesi: cookie `app_session_id` (JWT, HttpOnly, 1 tahun), logout, role superadmin/branch admin dengan **scope branch** (branch admin hanya lihat data pool-nya).
+- Satu QR all-in-one mengarah ke `/r/:code` dan melayani semua store sekaligus; store diidentifikasi belakangan dari nomor struk.
+- Formisi tiga sub-rating (pemasangan, grooming, pelayanan), komentar, dan nomor struk.
+- Validasi QR aktif di sisi server. Rating overall di bawah ambang langsung memicu alert.
+
+### Autentikasi dan otorisasi
+
+- Login lokal username dan password melalui env (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SUPERADMIN_PASSWORD`). Kolom password bertipe `password` dengan placeholder kosong.
+- Sesi berupa cookie `app_session_id` berisi JWT, HttpOnly, masa berlaku satu tahun.
+- Dua tingkat akses: super admin melihat semuanya, branch admin terbatas pada pool-nya sendiri. Pembatasan ditegakkan di lapisan kueri, bukan hanya di UI.
 
 ### Dashboard Overview
-- KPI: total review, rata-rata rating, hari ini, bulan ini, positif/negatif (vs threshold), open.
-- Grafik: distribusi rating, tren harian, skor per dimensi.
-- Analitik per branch, per team, dan **per store** (dari kode receipt, bukan per pool).
-- **Alert Center**: daftar alert terbaru + ringkasan critical/attention/resolved. Menampilkan **nama store** (storeName) — fallback branchName.
 
-### Reviews
-- Tabel dengan search (debounce 300 ms, anti refetch-per-huruf demi keyboard Android), filter status, **dropdown filter store** (tidak boleh kosong), paginasi + ukuran halaman, sorting kolom (tanggal/store/rating/status), multi-select.
-- Export: XLSX / ODS / CSV.
-- Detail review: 3 sub-rating + overall, isi komentar, tombol status **Open / Resolved** (satu arah; "New" tampil sebagai badge kecil di samping Open + unread dot), **Arsip** hanya super admin (setelah diarsipkan tidak bisa kembali), tombol **Hapus** hanya super admin.
-- Catatan resolve persist saat Open↔Resolved bolak-balik + bisa diedit.
-- **History modal** (ikon History): log perubahan; super admin dapat mengedit/menghapus entri log.
-- Menandai terbaca otomatis (`readAt`) saat admin membuka detail → unread dot hilang.
-- Baris detail lama tidak lagi menampilkan "Tim Instalasi" dan "Sumber QR".
+- Deretan KPI: total review, rata-rata rating, open, review hari ini, month to date, rasio positif terhadap negatif dibanding ambang.
+- Distribusi rating, tren harian, dan skor per dimensi dalam bentuk grafik area dan bar.
+- Analitik agregat per branch, per tim, dan per store. Perhitungan store memakai prefiks tiket, bukan nama pool.
+- Panel Alert Center berisi ringkasan critical, attention, dan resolved, plus tiga alert open terakhir. Label yang ditampilkan adalah nama store (`storeName`), dengan branch sebagai fallback.
 
-### Alerts
-- Alert otomatis untuk review di bawah threshold (default 3.5, dikonfigurasi di Settings), severity `critical`/`attention`.
-- Halaman Alerts: paginasi + search (receipt, pesan alert, komentar, store).
-- Resolve alert dengan catatan; resolve sekaligus menandai terbaca.
+### Manajemen review
 
-### Notifikasi (header)
-- Bell dengan badge jumlah belum dibaca (cap "9+"), isi gabungan review baru + alert baru.
-- Tombol **"Tandai semua dibaca"** — set `readAt` massal (review + alert), tanpa mengubah status.
-- Klik notifikasi → lompat ke detail review terkait.
+- Tabel review dengan pencarian tertunda 300 ms. Refetch per huruf sengaja dihindari karena mengganggu keyboard Android.
+- Filter status dan filter store melalui dropdown yang tidak boleh kosong.
+- Paginasi dengan ukuran halaman pilihan, sorting kolom tanggal, store, rating, dan status. Klik ketiga pada kolom sort mengembalikan urutan default.
+- Ekspor seluruh hasil terfilter ke XLSX, ODS, atau CSV.
+- Panel detail menampilkan tiga sub-rating, komentar, dan riwayat. Tombol status hanya Open dan Resolved; status `new` tampil sebagai badge kecil di samping Open, lengkap dengan titik unread.
+- Alur status bersifat searah. Archive hanya untuk super admin dan bersifat final.
+- Catatan resolve tetap tersimpan ketika status bergerak bolak-balik, dan dapat disunting kembali.
+- Modal History berisi seluruh jejak perubahan sebuah review. Sunting dan hapus entri log dikhususkan untuk super admin.
+- Membuka detail review otomatis menandai `readAt`, titik unread hilang.
+- Kolom lama "Tim Instalasi" dan "Sumber QR" sudah dihapus dari kartu detail karena membebani layar.
+
+### Alert
+
+- Alert `critical` atau `attention` dibuat otomatis saat rating overall jatuh di bawah ambang (default 3.5, dapat diatur).
+- Halaman Alerts dilengkapi paginasi dan pencarian lintas receipt, pesan alert, komentar, dan store.
+- Resolve alert disertai catatan opsional. Menyelesaikan alert sekaligus menandainya sebagai terbaca.
+
+### Notifikasi
+
+- Ikon bell di header menampilkan gabungan review dan alert terbaru dengan badge hitungan unread yang ditutup pada "9+".
+- Tombol "Tandai semua dibaca" mengisi `readAt` secara massal pada review dan alert, tanpa mengubah status kerja apa pun.
+- Mengklik salah satu item membawa admin langsung ke detail review terkait.
 
 ### Analytics
-- Tab "Summary Review": rekap 7 hari (exclude branch TEST) yang dirender otomatis di server — rata-rata 2 desimal, tertinggi/terendah per store, komentar per store.
 
-### QR Codes
-- Buat / aktif-nonaktifkan / hapus QR per branch, salin link `/r/:code`, preview gambar QR.
+- Tab Summary Review merangkum 7 hari terakhir secara otomatis: rata-rata per store dengan dua desimal, review tertinggi dan terendah, serta komentar representative per store.
 
-### Settings
-- Konfigurasi: Company name, Review page title, Thank-you message, **Negative threshold** (default 3.5 — pemicu alert + garis positif/negatif), Timezone.
-- **Danger zone**: hapus semua review ter-archive (permanen, konfirmasi di dialog).
-- Branch, team, dan akun admin **tidak** dikelola dari UI — lewat seed / DB langsung.
+### QR codes
 
-### UI
-- **Dark / light mode**: toggle ikon matahari/bulan di header (kiri bell), preferensi tersimpan di localStorage, seluruh panel admin punya varian `dark:`.
-- Versi aplikasi **semver dari commit history** (`1.<jumlah feat>.<jumlah fix>`, dihitung saat build oleh `vite.config.ts`) tampil di sidebar kiri bawah logo.
-- Semua dropdown auto-close saat klik di luar area.
+- Buat, aktif nonaktifkan, dan hapus kode QR per branch.
+- Salin tautan `/r/:code` dan pratinjau gambar QR dari halaman yang sama.
 
-### API (tRPC v2)
-Rangkum endpoint utama: `auth.login/logout/me`, `public.submit`, `admin.overview`, `admin.reviews/review/search`, `admin.notifications`, `admin.markAllNotificationsRead`, `admin.latestReviewAt`, `admin.updateReviewStatus`, `admin.updateReviewNote`, `admin.markReviewRead`, `admin.reviewHistory`, `admin.editReviewHistory` (superadmin), `admin.deleteReviewHistory` (superadmin), `admin.assignReview`, `admin.deleteReview/deleteAllReviews/deleteArchivedReviews` (superadmin), `admin.analyticsRecap`, `admin.alerts/resolveAlert`, `admin.qrCodes/createQRCode/toggleQRCode/deleteQRCode`, `admin.exportReviews`, `admin.settings/updateSettings`.
+### Pengaturan
 
-## Menjalankan lokal
+- Company name, judul halaman review, pesan ucapan terima kasih, ambang review negatif, dan zona waktu.
+- Danger zone berisi penghapusan permanen seluruh review ter-archive, dikemas dengan dialog konfirmasi.
+- Branch, tim, dan akun admin tidak dikelola lewat UI. Penanganannya melalui seed atau akses DB langsung.
+
+### Tampilan
+
+- Dark dan light mode memakai ikon matahari dan bulan, letaknya di kiri bell. Preferensi disimpan di localStorage dan seluruh panel memiliki varian `dark:`.
+- Versi aplikasi dihitung dari riwayat commit dengan pola `1.<jumlah feat>.<jumlah fix>`, disuntik saat build oleh `vite.config.ts`, tampil di sidebar kiri bawah logo.
+- Seluruh dropdown menutup sendiri ketika area luarnya diklik.
+
+## API tRPC
+
+| Group | Prosedur |
+|-------|----------|
+| auth | login, logout, me |
+| public | submit |
+| admin | overview, reviews, review, search, notifications, markAllNotificationsRead, latestReviewAt, updateReviewStatus, updateReviewNote, markReviewRead, reviewHistory, editReviewHistory, deleteReviewHistory, assignReview, deleteReview, deleteAllReviews, deleteArchivedReviews, analyticsRecap, alerts, resolveAlert, qrCodes, createQRCode, toggleQRCode, deleteQRCode, exportReviews, settings, updateSettings |
+
+Prosedur bertanda superadmin only: editReviewHistory, deleteReviewHistory, deleteReview, deleteAllReviews, deleteArchivedReviews.
+
+## Menjalankan secara lokal
 
 ```bash
 npm install
 cp .env.example .env   # isi DATABASE_URL, JWT_SECRET, ADMIN_PASSWORD, SUPERADMIN_PASSWORD
-npm run db:push        # = drizzle-kit generate && drizzle-kit migrate
-npx tsx server/seed.ts # seed demo (idempotent: skip kalau review sudah >= 120)
+npm run db:push        # generate lalu migrate dari drizzle/schema.ts
+npx tsx server/seed.ts # seed demo, idempotent: dilewati bila review sudah ada
 npm run dev            # http://localhost:5173
 ```
 
-## Testing & verifikasi
+## Verifikasi
+
+Perintah resmi dari `package.json`. Ketiganya harus hijau sebelum kode dianggap selesai.
 
 ```bash
-npm run check          # tsc --noEmit — harus 0 error sebelum deploy
-npm run test           # vitest run (23 test: store resolution, analytics summary, dsb)
-npm run build          # vite build + esbuild server + server v2 + salin store.json ke dist
+npm run check          # tsc --noEmit
+npm run test           # vitest run (unit + contract, termasuk resolver store dan summary analytics)
+npm run build          # vite build + bundle server + salin store.json ke dist
 ```
 
-## Environment variables
+## Variabel lingkungan
 
 | Variabel | Default | Kegunaan |
 |----------|---------|----------|
-| `DATABASE_URL` | — | MySQL connection string (WAJIB) |
-| `PORT` / `PORT_FULL_V2` | `3000` / `9313` | Port instance v1 / v2 (host) |
-| `JWT_SECRET` / `JWT_SECRET_V2` | — | Kunci sesi (WAJIB produksi) |
+| `DATABASE_URL` | tanpa | Connection string MySQL, wajib diisi |
+| `PORT` / `PORT_FULL_V2` | `3000` / `9313` | Port host untuk v1 dan v2 |
+| `JWT_SECRET` / `JWT_SECRET_V2` | tanpa | Kunci tanda tangan sesi, wajib di produksi |
 | `ADMIN_USERNAME(_V2)` | `admin` | Username login lokal |
-| `ADMIN_PASSWORD(_V2)` | `admin` | Password admin — ganti di produksi |
-| `SUPERADMIN_PASSWORD(_V2)` | `super123` | Password super admin — ganti di produksi |
-| `TZ` | `Asia/Jakarta` | Timestamp lokal |
-| `VITE_APP_ID`, `OAUTH_SERVER_URL`, `OWNER_OPEN_ID` | kosong | OAuth Replit (kosongkan = login lokal) |
-| `BUILT_IN_FORGE_API_URL/_KEY` | kosong | Asset forge generator (opsional) |
+| `ADMIN_PASSWORD(_V2)` | `admin` | Password admin, wajib diganti di produksi |
+| `SUPERADMIN_PASSWORD(_V2)` | `super123` | Password super admin, wajib diganti di produksi |
+| `TZ` | `Asia/Jakarta` | Zona waktu timestamp |
+| `VITE_APP_ID`, `OAUTH_SERVER_URL`, `OWNER_OPEN_ID` | kosong | Konfigurasi OAuth; dikosongkan berarti login lokal |
+| `BUILT_IN_FORGE_API_URL/_KEY` | kosong | Generator aset, opsional |
 
-Catatan compose: DB `db-v2` tidak mengekspos port ke host (internal docker network saja); akses langsung lewat `docker exec serso-review-monitor-db-v2-1 mysql ...`.
+Catatan: container `db-v2` tidak mengekspos port ke host. Akses langsung lewat `docker exec serso-review-monitor-db-v2-1 mysql ...`.
 
-## Database
+## Skema data
 
 ```
-branches  1--*  teams    (tim instalasi per pool)
-branches  1--*  qr_codes (kode QR aktif per branch)
-branches  1--*  reviews  (review pelanggan; receiptNo -> kode store via store.json)
-reviews   1--*  review_alerts  (auto saat rating < threshold; status open/resolved + readAt)
-reviews   1--*  audit_logs     (log status/edit review; superadmin bisa edit/hapus entri)
-users:        akun admin (superadmin/branch admin, scope branchId)
-settings:     threshold rating negatif + preferensi dashboard
+branches  1--*  teams           tim instalasi per pool
+branches  1--*  qr_codes        kode QR aktif per branch
+branches  1--*  reviews         review pelanggan, receiptNo menunjuk kode store
+reviews   1--*  review_alerts   terbit otomatis saat rating di bawah ambang
+reviews   1--*  audit_logs      jejak perubahan status dan suntingan
+users      ->   akun admin dengan scope branchId
+settings  ->   ambang negatif, teks halaman, zona waktu
 ```
 
-Enum status review: `new` (baru masuk, tak muncul sebagai tombol — jadi badge), `open`, `resolved`, `archived`. Alur normal: new → open → resolved (one-way; archived khusus superadmin dan final).
+Status review memakai enum `new`, `open`, `resolved`, `archived`. Alur normal bergerak satu arah: new menjadi open, open menjadi resolved. Archive khusus super admin dan final.
 
-`reviews.readAt` & `review_alerts.readAt` = penanda notifikasi terbaca (bukan status kerja).
+Kolom `readAt` pada `reviews` dan `review_alerts` hanyalah penanda notifikasi sudah dibuka, bukan status kerja.
 
-## Deploy production (VPS)
+## Deploy produksi
 
 ```bash
 git fetch fork && git checkout fix/deploy-runtime
 docker compose build app-full-v2
 docker compose up -d db-v2 app-full-v2
-# entrypoint container: `pnpm exec drizzle-kit migrate && node dist/index.js`
-# -> migrasi jalan otomatis saat container start
-curl -s http://127.0.0.1:9313/healthz   # "ok"
 ```
 
-Domain reviewv2.kemscloud.web.id → Caddy reverse proxy → :9313. Setelah deploy: purge cache Cloudflare (`cf-purge-kems.py`).
+Entrypoint container menjalankan `pnpm exec drizzle-kit migrate && node dist/index.js`, sehingga migrasi apply sendiri saat start.
 
-## Konvensi & larangan
-
-- Jangan pernah hardcode password; kredensial via env.
-- `drizzle/schema.ts` adalah sumber kebenaran skema — setiap perubahan kolom wajib `npm run db:generate` + commit SQL migrasinya, baru deploy.
-- Jangan jalankan `npm run db:drop` di production.
-- Semua query ter-scope role — branch admin tidak boleh bisa melihat data pool lain; cek pakai endpoint terautentikasi, bukan cuma UI.
-- `pnpm run check` + `pnpm run test` + `pnpm run build` harus hijau sebelum commit/deploy; verifikasi bundle live = bundle container sebelum klaim "sudah ter-deploy".
-- Styling dark mode: komponen baru wajib punya varian `dark:` (atau jalankan pass konversi), jangan pakai warna light-only mentah.
-
-## Development
-
-Struktur penting:
-
-```
-client/src/pages/AdminApp.tsx      # SELURUH admin SPA (single-file, sadar trade-off)
-client/src/pages/PublicReview.tsx  # form publik /r/:code
-client/src/pages/Home.tsx          # landing
-client/src/contexts/ThemeContext.tsx
-server/routers.ts                  # tRPC router (auth, public, admin)
-server/db.ts                       # semua akses DB + scoping role
-server/store.ts / store.json       # katalog 742 store + resolver receipt->store
-server/analytics.ts                # Summary Review deterministik
-server/seed.ts                     # seed demo (idempotent, target 120 review)
-server/v2/server.ts                # server v2 minimal
-shared/                            # tipe + konstanta (const.ts)
-drizzle/schema.ts + 0000..0009     # skema + migrasi
+```bash
+curl -s http://127.0.0.1:9313/healthz    # "ok"
 ```
 
-- `npm run dev` — dev server (tsx watch)
-- `npm run db:push` — generate migrasi + migrate dari `drizzle/schema.ts`
-- `npm run check` / `npm run test` / `npm run build` — lihat bagian Testing
-- `npm run format` — prettier
-- `npm run shadcdn add <component>` — tambah komponen shadcn/ui
+Setelah deploy, bersihkan cache Cloudflare memakai `cf-purge-kems.py`. Verifikasi terakhir selalu membandingkan bundle yang di-serve domain dengan bundle di dalam container; keduanya harus identik.
+
+## Struktur proyek
+
+```
+client/src/pages/AdminApp.tsx       seluruh admin SPA dalam satu file
+client/src/pages/PublicReview.tsx   formulir publik /r/:code
+client/src/contexts/ThemeContext.tsx konteks dark/light
+server/routers.ts                   router tRPC: auth, public, admin
+server/db.ts                        akses data dan scoping role
+server/store.ts + store.json        katalog store dan resolver tiket
+server/analytics.ts                 Summary Review deterministik
+server/seed.ts                      seed demo (target 120 review)
+server/v2/server.ts                 server v2 tipis
+shared/                             tipe dan konstanta
+drizzle/                            schema.ts + migrasi 0000 sampai 0009
+```
+
+## Konvensi dan larangan
+
+- Kredensial hanya lewat env, tanpa hardcode.
+- `drizzle/schema.ts` adalah sumber kebenaran skema. Setiap perubahan kolom wajib menghasilkan file migrasi yang ikut di-commit sebelum deploy.
+- `npm run db:push` dijalankan terhadap DB yang aktif. Pastikan `DATABASE_URL` menunjuk instance yang benar; untuk produksi v2 lewat `db-v2`.
+- Semua kueri tunduk pada aturan role. Jangan menguji scope hanya dari UI; panggil endpoint terautentikasi sebagai bukti.
+- Cek, test, dan build lewat dulu, baru commit dan deploy. Klaim "sudah terpasang" mensyaratkan verifikasi bundle live.
+- Komponen UI baru wajib menyertakan varian `dark:` agar mode gelap tetap konsisten.
