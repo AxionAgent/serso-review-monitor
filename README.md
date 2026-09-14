@@ -1,262 +1,186 @@
-# Customer Review & Service Quality Management
+# Serso Experience OS — Customer Review Monitoring
 
-Live deployment: **https://reviewv2.kemscloud.web.id** (this is the primary instance; the older
-`review.kemscloud.web.id` runs the same code against a separate database).
+Aplikasi monitoring review pelanggan multi-store untuk instalasi layanan (pool/branch). Pelanggan scan QR → isi form review (1–5 ⭐, 3 dimensi + komentar) → admin pantau, tandai, dan resolve lewat dashboard.
 
-## Product overview
+Status proyek: **satu server production VPS Oracle ARM64**. Dua instance jalan berdampingan dari repo yang sama:
 
-The application replaces the spreadsheet workflow:
+| Instance | Domain | Container | Port host | Database |
+|----------|--------|-----------|-----------|----------|
+| v1 | review.kemscloud.web.id | `serso-review-monitor-app-1` | `${PORT:-3000}` | `serso` |
+| v2 (aktif dikembangkan) | reviewv2.kemscloud.web.id | `serso-review-monitor-app-full-v2-1` | `${PORT_FULL_V2:-9313}` | `serso_v2` |
 
-> Customer → Scan QR → Review Form → Backend → Database → Admin Workspace → Analytics
+Branch kerja aktif: **`fix/deploy-runtime`** (dipush ke fork `AxionAgent/serso-review-monitor`; PR #1 → `codex31/serso-review-monitor@main`). Branch `v2` lokal identik dengan `fix/deploy-runtime`.
 
-There is one all-in-one QR (`/r/UNIVERSAL`) whose `branchId` is `NULL`. The customer never picks
-a branch: the review is stored unassigned and an admin assigns the store afterwards (the store
-column is inline-editable). Per-branch QR codes (`/r/SGK`, `/r/PTK`, `/r/KTP`) are still
-supported — the browser never submits a trusted `branchId`; the server resolves the QR code to
-its branch. Disabled QR codes and inactive branches are rejected before submission. Unrecognized
-receipt numbers display as `Unknown` in the store column.
+## Stack
 
-## Technology
+- Frontend: React + Vite + wouter + Tailwind CSS v4 + shadcn/ui + lucide-react + TanStack React Query
+- Backend: Express + tRPC v11 (single router), sesi via cookie `kt_sess` (JWT)
+- Database: MySQL 8 (drizzle-orm + mysql2); 10 file migrasi di `drizzle/`
+- Auth: OAuth (Replit provider, opsional) **atau** login lokal admin/superadmin via env
+- Deploy: Docker Compose (satu `Dockerfile` multi-stage) + Caddy reverse proxy + Cloudflare
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS 4 with a custom teal / leaf visual system, glassmorphism panels
-- Express + tRPC 11 for typed server procedures
-- Drizzle ORM + MySQL 8.4 (Docker volume; TiDB-compatible migrations retained from the original
-  WebDev scaffold)
-- Signed local session cookie (`app_session_id`, 1-year maxAge) for authenticated workspace access
-- Recharts for analytics
-- `qrcode.react` for real SVG QR codes
-- `xlsx` for the export button — **dynamically imported** so it stays out of the initial chunk
-- Vitest suite: `pnpm test` (26 tests in `server/analytics.test.ts`, `auth.logout.test.ts`,
-  `status-visibility.test.ts`, `store.test.ts`)
+## Arsitektur
 
-Authentication uses a signed local session cookie. OAuth registration is disabled for this
-deployment.
-
-## Deployment topology (docker compose)
-
-| Service | Host port | DB | Public URL |
-| --- | --- | --- | --- |
-| `app` | 9311 | `serso` (db) | review.kemscloud.web.id |
-| `app-full-v2` | 9313 | `serso_v2` (db-v2) | reviewv2.kemscloud.web.id |
-
-Both app services run the **same** image (`Dockerfile` → `node dist/index.js`, the full React
-app). Caddy terminates TLS and reverse-proxies each subdomain to its port; Cloudflare sits in
-front of Caddy. Env vars come from `.env` (`MYSQL_*` for v1, `MYSQL_*_V2` / `JWT_SECRET_V2` /
-`ADMIN_PASSWORD_V2` / `PORT_FULL_V2=9313` for reviewv2).
-
-> ⚠️ `server/v2/server.ts` (+ `server/v2/public/*.html`) is a legacy standalone vanilla-admin
-> experiment. It is **dead code** — the Dockerfile builds `dist/v2/server.js` but no running
-> service uses it. All live admin traffic goes to the React `AdminApp.tsx` via `serveStatic`.
-
-## Main routes
-
-| Route | Purpose |
-| --- | --- |
-| `/` | Branded entry page with links to the workspace and demo QR routes |
-| `/r/UNIVERSAL` | Public review form — one all-in-one QR, no branch selector |
-| `/r/SGK` `/r/PTK` `/r/KTP` | Branch-bound review forms (legacy style, still resolved server-side) |
-| `/admin` | Login gate, then live KPI overview, trend chart, rating distribution, recent reviews, alerts |
-| `/admin/reviews` | Searchable review table, status workflow, store/team inline edit, XLSX/ODS/CSV export, delete |
-| `/admin/alerts` | Negative-review alert queue and resolve action |
-| `/admin/qr-codes` | QR generation, SVG download, preview, activation, and disable flow |
-| `/admin/analytics` | Branch, team, QR, and dimension analytics + AI Summarize |
-| `/admin/settings` | Persisted customer-facing settings, branches (create/activate/deactivate), negative threshold |
-
-There is no `/admin/teams` page — teams are only listed on a review (the `teams` table is used by
-`getBranchActiveTeams`, not managed from the UI).
-
-## Database model
-
-The schema lives in `drizzle/schema.ts`. Tables: `users`, `branches`, `teams`, `qr_codes`,
-`reviews`, `review_alerts`, `audit_logs`, `settings`. Key shapes:
-
-- `users` — `openId` unique, `email`, `role` enum (`user`/`admin`/`super_admin`/`branch_admin`/
-  `viewer`), `branchId` scope, `status`
-- `branches` — unique `code`, `status` enum `active`/`inactive`. Live rows in `serso_v2`:
-  `POOLSKW` (POOL SINGKAWANG), `TEST` (TEST POOL), `PNK` (PONTIANAK)
-- `qr_codes` — unique `code`, `url`, `status`; `branchId NULL` = universal QR. Live:
-  `REVIEW` → `/r/UNIVERSAL`
-- `reviews` — `branchId` nullable (universal QR reviews start unassigned), `receiptNo`, three
-  ratings, `comment`, `status` enum, `note` text (captured on resolve)
-- `review_alerts` — auto-created when any rating ≤ configured negative threshold
-- `settings` — company name, customer page copy, negative threshold, timezone, branding
-
-Indexes cover branch, QR, receipt, created timestamp, status, ratings, alert state, and audit lookups.
-
-## Review lifecycle status
-
-`reviews.status` is a MySQL enum with exactly four values: `new`, `open`, `resolved`, `archived`.
-There is no `reviewed` value — it was a ghost from an early schema revision and was removed
-(migration `drizzle/0007_mixed_zuras.sql`). Do not reintroduce it.
-
-Allowed transitions (enforced in `server/db.ts::updateReviewStatus`, verified empirically):
-
-| Role | From | To | Result |
-| --- | --- | --- | --- |
-| admin | `new` | `open`, `resolved` | allowed |
-| admin | `new` | `archived` | blocked — super admin only |
-| admin | `open` | `resolved` | allowed |
-| admin | `open` | `new` | blocked — admin cannot return to New |
-| admin | `resolved` | `open`, `resolved` | allowed (reopen) |
-| admin | `archived` | anything | invisible — `Review not found` |
-| super_admin | `new` | `open`, `resolved`, `archived` | allowed |
-| super_admin | `open` | `new`, `resolved`, `archived` | allowed |
-| super_admin | `resolved` | `open`, `resolved`, `archived` | allowed (reopen) |
-| super_admin | `archived` | `open`, `resolved`, `archived` | allowed (unarchive) |
-| any | `resolved`, `archived` | `new` | blocked for every role, including super_admin |
-
-The one hard invariant for everyone: a review that reached `resolved` or `archived` can never
-return to `new`. Everything else above is role-gated. Note super_admin *can* roll `open → new` —
-the only path back to New that exists.
-
-Only `admin` and `superadmin` can log in (`auth.login` checks `ADMIN_PASSWORD` /
-`SUPERADMIN_PASSWORD`; there is no viewer or branch_admin login path). The `viewer` and
-`branch_admin` roles exist in the schema and seed, and every write route calls
-`assertWritable()` which rejects `viewer` — but those roles are currently unreachable from the
-UI, so their behaviour is code-level only.
-
-Archived reviews are excluded from `admin.reviews`, `admin.alerts`, `admin.review` (direct
-`?id=` lookups return `null`), analytics, and KPI counts for every role except `super_admin`.
-The rule lives in one place: `server/db.ts::hiddenStatusesFor` — change it there, not in the UI.
-
-Moving a review to `resolved` captures an optional action note (`reviews.note`). Both the
-review detail modal and the alerts resolve dialog write it. An alert resolve never mutates a
-review that is already outside the `new`/`open` flow, so archived reviews cannot be silently
-reopened.
-
-## Analytics Summary
-
-`admin.analyticsRecap` is a plain query that returns a **deterministic, server-rendered**
-digest built from the last **7 days** of reviews via `db.ts::getAllNonArchivedReviews(user, 7)`. Excluded: `archived`
-reviews, `inactive` branches, and the branch codes listed in
-`ANALYTICS_EXCLUDED_BRANCH_CODES` (currently `TEST`, because TEST POOL exists as a real
-`active` branch). Reviews with no branch (universal QR) are kept.
-
-All maths and the final text live in `server/analytics.ts` (`summarizeStats` /
-`renderSummary`), unit-tested in `analytics.test.ts`. The Analytics page loads it automatically —
-no button press needed, and it cannot fabricate a number.
-
-Layout (owner-approved): header block (period, totals, per-aspect averages, pending/resolved
-counts), then one block per store sorted by lowest average — each naming the *lowest-rated
-review that is not yet resolved* (receipt number, per-aspect scores, date, status label, and
-its comment when present) — then a closing note on the weakest aspect (ties are reported as
-ties, never guessed). "Lowest" ignores resolved reviews by design — resolved means no longer
-a problem.
-
-> History: v1 sent raw rows to an LLM (9router) — it fabricated counts (claimed 88 reviews,
-> 53 bad, from 78 rows / 19 bad). v2 computed stats server-side but still let the LLM phrase
-> the output — layout came out as an unreadable run-on wall. v3 (current): the model was cut
-> out of the loop entirely; `renderSummary` produces the text itself.
-
-## Installation and local development
-
-```bash
-pnpm install
-# no .env.example in repo — create .env (gitignored) with MYSQL_* + *_V2 keys,
-# see docker-compose.yml for the variable names
-pnpm db:push           # drizzle-kit generate && migrate
-pnpm check && pnpm test
-pnpm dev
+```
+Client (React SPA, dark/light) -> Express -> tRPC router (server/routers.ts)
+                                             v
+                           server/db.ts: akses MySQL + role scoping
+                                             v
+                  MySQL (serso / serso_v2) -- tabel inti:
+                  users, branches, teams, qr_codes, reviews, review_alerts, audit_logs, settings
 ```
 
-Required runtime variables: `DATABASE_URL` (mysql://…), `JWT_SECRET`, `ADMIN_USERNAME`,
-`ADMIN_PASSWORD`, `SUPERADMIN_PASSWORD`. Do not commit secrets or local `.env` files.
+- `server/store.ts` — katalog 742 store (`server/store.json`). Kode store di-parse dari `receiptNo` (mis. `MB.5A.20260910.106` → store `5A` = HCIR SELMA SINGKAWANG G M). Kode tak dikenal → label **"Unknown"**.
+- `server/analytics.ts` — "Summary Review": render deterministik sisi server (LLM sudah dibuang), window 7 hari, exclude branch berkode TEST.
+- `server/v2/server.ts` — server v2 minimalis (`/healthz` saja, tanpa instrumentasi metrics).
 
-The first migration was adjusted for TiDB compatibility so `settings.thankYouMessage` uses a
-bounded `varchar(500)` instead of a text default.
+## Fitur
 
-## Seed data
+### Publik (form review)
+- Satu QR all-in-one mengarah ke `/r/:code` → form rating: 3 dimensi (pemasangan, grooming, pelayanan) + komentar + nomor struk.
+- Submission publik memvalidasi QR aktif, menolak status invalid, auto-create alert bila rating overall di bawah threshold.
 
-The idempotent seed script is `server/seed.ts` (`pnpm exec tsx server/seed.ts`). It targets
-`SEED_REVIEW_COUNT = 120` reviews, top-up only — if the table already has ≥120 rows it prints
-`Seed skipped` and does nothing. It creates:
+### Autentikasi & role admin
+- Login lokal username/password: `ADMIN_USERNAME/ADMIN_PASSWORD` (admin) dan `SUPERADMIN_PASSWORD` (super admin) via env. Input password bertipe `password`, placeholder kosong.
+- Sesi: cookie `app_session_id` (JWT, HttpOnly, 1 tahun), logout, role superadmin/branch admin dengan **scope branch** (branch admin hanya lihat data pool-nya).
 
-- Singkawang, Pontianak, and Ketapang branches **only if the branch table is empty** (real
-  deployments keep their own branches; live v2 rows are POOLSKW/TEST/PNK)
-- The universal QR (`/r/UNIVERSAL`, `branchId NULL`) if absent; per-branch QRs when present
-- Reviews distributed over the previous 90 days with varied ratings, statuses, comments, and QR
-  sources (the current UI does not expose team assignment; the seed predates that change)
-- Low-rating alerts generated from seeded reviews
-- Role fixture users (`admin@example.com`, `singkawang@example.com`, `viewer@example.com`)
+### Dashboard Overview
+- KPI: total review, rata-rata rating, hari ini, bulan ini, positif/negatif (vs threshold), open.
+- Grafik: distribusi rating, tren harian, skor per dimensi.
+- Analitik per branch, per team, dan **per store** (dari kode receipt, bukan per pool).
+- **Alert Center**: daftar alert terbaru + ringkasan critical/attention/resolved. Menampilkan **nama store** (storeName) — fallback branchName.
 
-The dashboard uses live database aggregation; KPI values are never hardcoded.
+### Reviews
+- Tabel dengan search (debounce 300 ms, anti refetch-per-huruf demi keyboard Android), filter status, **dropdown filter store** (tidak boleh kosong), paginasi + ukuran halaman, sorting kolom (tanggal/store/rating/status), multi-select.
+- Export: XLSX / ODS / CSV.
+- Detail review: 3 sub-rating + overall, isi komentar, tombol status **Open / Resolved** (satu arah; "New" tampil sebagai badge kecil di samping Open + unread dot), **Arsip** hanya super admin (setelah diarsipkan tidak bisa kembali), tombol **Hapus** hanya super admin.
+- Catatan resolve persist saat Open↔Resolved bolak-balik + bisa diedit.
+- **History modal** (ikon History): log perubahan; super admin dapat mengedit/menghapus entri log.
+- Menandai terbaca otomatis (`readAt`) saat admin membuka detail → unread dot hilang.
+- Baris detail lama tidak lagi menampilkan "Tim Instalasi" dan "Sumber QR".
 
-## Demo accounts and authentication
+### Alerts
+- Alert otomatis untuk review di bawah threshold (default 3.5, dikonfigurasi di Settings), severity `critical`/`attention`.
+- Halaman Alerts: paginasi + search (receipt, pesan alert, komentar, store).
+- Resolve alert dengan catatan; resolve sekaligus menandai terbaca.
 
-| Role | Username | Development password |
-| --- | --- | --- |
-| Admin | `admin` | `admin` (env `ADMIN_PASSWORD`; compose default `admin`) |
-| Super admin | `superadmin` | `super123` (env `SUPERADMIN_PASSWORD`; code fallback `super1234`) |
+### Notifikasi (header)
+- Bell dengan badge jumlah belum dibaca (cap "9+"), isi gabungan review baru + alert baru.
+- Tombol **"Tandai semua dibaca"** — set `readAt` massal (review + alert), tanpa mengubah status.
+- Klik notifikasi → lompat ke detail review terkait.
 
-The server validates these credentials, creates or reuses the seeded role, and issues the signed
-`app_session_id` cookie (1-year maxAge). Replace the hardcoded development credential check with
-a secret-backed credential or an enterprise identity provider before wider production use.
+### Analytics
+- Tab "Summary Review": rekap 7 hari (exclude branch TEST) yang dirender otomatis di server — rata-rata 2 desimal, tertinggi/terendah per store, komentar per store.
 
-## QR generation
+### QR Codes
+- Buat / aktif-nonaktifkan / hapus QR per branch, salin link `/r/:code`, preview gambar QR.
 
-From **QR Codes**, choose a branch and name. The server creates a unique code and stores a
-destination such as `/r/1-ABC123`. The UI renders the live absolute URL as an SVG QR code. Each
-QR card supports: view the customer route, download the QR as SVG, disable or reactivate the QR,
-and displays branch, QR name, code, and destination URL. The operational model is one universal
-QR for all stores — branch-bound demo routes remain supported for legacy printed codes.
+### Settings
+- Konfigurasi: Company name, Review page title, Thank-you message, **Negative threshold** (default 3.5 — pemicu alert + garis positif/negatif), Timezone.
+- **Danger zone**: hapus semua review ter-archive (permanen, konfirmasi di dialog).
+- Branch, team, dan akun admin **tidak** dikelola dari UI — lewat seed / DB langsung.
 
-## Review behavior and validation
+### UI
+- **Dark / light mode**: toggle ikon matahari/bulan di header (kiri bell), preferensi tersimpan di localStorage, seluruh panel admin punya varian `dark:`.
+- Versi aplikasi **semver dari commit history** (`1.<jumlah feat>.<jumlah fix>`, dihitung saat build oleh `vite.config.ts`) tampil di sidebar kiri bawah logo.
+- Semua dropdown auto-close saat klik di luar area.
 
-Public submissions enforce server-side validation for receipt number (required, ≤80 chars),
-ratings (integer 1–5), comment length (≤1000), QR existence and status, branch status, and a
-**15-second per-IP-per-QR rate limiter** (`TOO_MANY_REQUESTS`, in-memory map). Duplicate receipt
-numbers for the same branch return a friendly duplicate message; no data is silently deleted.
-Any rating at or below the configured negative threshold auto-creates an open critical alert.
+### API (tRPC v2)
+Rangkum endpoint utama: `auth.login/logout/me`, `public.submit`, `admin.overview`, `admin.reviews/review/search`, `admin.notifications`, `admin.markAllNotificationsRead`, `admin.latestReviewAt`, `admin.updateReviewStatus`, `admin.updateReviewNote`, `admin.markReviewRead`, `admin.reviewHistory`, `admin.editReviewHistory` (superadmin), `admin.deleteReviewHistory` (superadmin), `admin.assignReview`, `admin.deleteReview/deleteAllReviews/deleteArchivedReviews` (superadmin), `admin.analyticsRecap`, `admin.alerts/resolveAlert`, `admin.qrCodes/createQRCode/toggleQRCode/deleteQRCode`, `admin.exportReviews`, `admin.settings/updateSettings`.
 
-The admin procedures enforce authentication and scope on the backend. A `branch_admin` can only
-query and mutate records belonging to the assigned branch. A `viewer` can query but cannot write.
-`admin` / `super_admin` can access the complete workspace. Admin actions write audit events.
-
-## Build and production deployment
+## Menjalankan lokal
 
 ```bash
-pnpm check
-pnpm build   # vite client -> dist/public (+ esbuild server dist/index.js; dist/v2 is legacy)
-docker compose up -d --build app-full-v2   # deploy reviewv2
+npm install
+cp .env.example .env   # isi DATABASE_URL, JWT_SECRET, ADMIN_PASSWORD, SUPERADMIN_PASSWORD
+npm run db:push        # = drizzle-kit generate && drizzle-kit migrate
+npx tsx server/seed.ts # seed demo (idempotent: skip kalau review sudah >= 120)
+npm run dev            # http://localhost:5173
 ```
 
-Static asset caching (root cause of the old "blank first paint until refresh"): hashed files
-under `/assets` are content-addressed by Vite, so `server/_core/vite.ts::serveStatic` serves them
-with `Cache-Control: public, max-age=31536000, immutable`. The HTML shell and the SPA fallback
-are served `no-store` so a new deploy's hashed reference is picked up immediately. Before this,
-`express.static` sent `max-age=0`, Cloudflare returned `REVALIDATED` on every visit, and each
-visitor re-pulled the ~900KB entry chunk from the slow OCI origin (3.5–8s of blank page). After
-any deploy that changes hashed asset names, purge the old file URLs in Cloudflare.
+## Testing & verifikasi
 
-Production hardening should include replacing the development credential check with a
-secret-backed value, validating rate limits against expected traffic, and enabling database
-backups (`mysql_data` / `mysql_v2_data` volumes).
+```bash
+npm run check          # tsc --noEmit — harus 0 error sebelum deploy
+npm run test           # vitest run (23 test: store resolution, analytics summary, dsb)
+npm run build          # vite build + esbuild server + server v2 + salin store.json ke dist
+```
 
-## Architecture overview
+## Environment variables
 
-- `client/src/pages/PublicReview.tsx` owns the mobile customer journey.
-- `client/src/pages/AdminApp.tsx` owns the workspace layout and all feature pages (login gate,
-  overview, reviews, alerts, QR codes, analytics, settings) — one file, tab-routed by URL.
-- `client/src/App.tsx` wires public (`/r/:code`), admin (`/admin`), and 404 routes.
-- `server/routers.ts` defines public and protected tRPC contracts, validation, access checks,
-  login/logout, and mutation orchestration.
-- `server/db.ts` contains database queries, scope filtering, review creation, status-transition
-  enforcement, alert generation, analytics aggregation, CSV export, and audit logging.
-- `server/analytics.ts` — AI-summarize prompt assembly + server-side stats.
-- `shared/store.ts` — receipt-number → store mapping for unassigned reviews.
-- `drizzle/schema.ts` is the source of truth for relational tables and indexes.
-- `server/v2/*` — legacy dead vanilla-admin, not served by any running container.
+| Variabel | Default | Kegunaan |
+|----------|---------|----------|
+| `DATABASE_URL` | — | MySQL connection string (WAJIB) |
+| `PORT` / `PORT_FULL_V2` | `3000` / `9313` | Port instance v1 / v2 (host) |
+| `JWT_SECRET` / `JWT_SECRET_V2` | — | Kunci sesi (WAJIB produksi) |
+| `ADMIN_USERNAME(_V2)` | `admin` | Username login lokal |
+| `ADMIN_PASSWORD(_V2)` | `admin` | Password admin — ganti di produksi |
+| `SUPERADMIN_PASSWORD(_V2)` | `super123` | Password super admin — ganti di produksi |
+| `TZ` | `Asia/Jakarta` | Timestamp lokal |
+| `VITE_APP_ID`, `OAUTH_SERVER_URL`, `OWNER_OPEN_ID` | kosong | OAuth Replit (kosongkan = login lokal) |
+| `BUILT_IN_FORGE_API_URL/_KEY` | kosong | Asset forge generator (opsional) |
 
-## Acceptance flow
+Catatan compose: DB `db-v2` tidak mengekspos port ke host (internal docker network saja); akses langsung lewat `docker exec serso-review-monitor-db-v2-1 mysql ...`.
 
-1. Open `/r/UNIVERSAL`; the form shows no branch selector. Submit a unique receipt with ratings;
-   the review is stored with `branchId NULL` and appears with calculated overall rating.
-2. In the reviews workspace, assign the store inline; it now counts under that branch.
-3. Submit a rating at or below the negative threshold; an open negative-review alert is created.
-4. Move a review to `resolved` with a note; the alert resolve never reopens it.
-5. Disable a QR from QR Codes; visiting its route shows `QR Code tidak aktif.` and no form.
-6. As `admin`, try to archive or return a resolved review to New — both blocked; as `superadmin`,
-   archive/unarchive works but `resolved → new` is blocked for everyone.
-7. First visit to `/admin` renders within one asset download: `/assets/*` responses carry
-   `immutable, max-age=1y`, the HTML shell carries `no-store`.
+## Database
+
+```
+branches  1--*  teams    (tim instalasi per pool)
+branches  1--*  qr_codes (kode QR aktif per branch)
+branches  1--*  reviews  (review pelanggan; receiptNo -> kode store via store.json)
+reviews   1--*  review_alerts  (auto saat rating < threshold; status open/resolved + readAt)
+reviews   1--*  audit_logs     (log status/edit review; superadmin bisa edit/hapus entri)
+users:        akun admin (superadmin/branch admin, scope branchId)
+settings:     threshold rating negatif + preferensi dashboard
+```
+
+Enum status review: `new` (baru masuk, tak muncul sebagai tombol — jadi badge), `open`, `resolved`, `archived`. Alur normal: new → open → resolved (one-way; archived khusus superadmin dan final).
+
+`reviews.readAt` & `review_alerts.readAt` = penanda notifikasi terbaca (bukan status kerja).
+
+## Deploy production (VPS)
+
+```bash
+git fetch fork && git checkout fix/deploy-runtime
+docker compose build app-full-v2
+docker compose up -d db-v2 app-full-v2
+# entrypoint container: `pnpm exec drizzle-kit migrate && node dist/index.js`
+# -> migrasi jalan otomatis saat container start
+curl -s http://127.0.0.1:9313/healthz   # "ok"
+```
+
+Domain reviewv2.kemscloud.web.id → Caddy reverse proxy → :9313. Setelah deploy: purge cache Cloudflare (`cf-purge-kems.py`).
+
+## Konvensi & larangan
+
+- Jangan pernah hardcode password; kredensial via env.
+- `drizzle/schema.ts` adalah sumber kebenaran skema — setiap perubahan kolom wajib `npm run db:generate` + commit SQL migrasinya, baru deploy.
+- Jangan jalankan `npm run db:drop` di production.
+- Semua query ter-scope role — branch admin tidak boleh bisa melihat data pool lain; cek pakai endpoint terautentikasi, bukan cuma UI.
+- `pnpm run check` + `pnpm run test` + `pnpm run build` harus hijau sebelum commit/deploy; verifikasi bundle live = bundle container sebelum klaim "sudah ter-deploy".
+- Styling dark mode: komponen baru wajib punya varian `dark:` (atau jalankan pass konversi), jangan pakai warna light-only mentah.
+
+## Development
+
+Struktur penting:
+
+```
+client/src/pages/AdminApp.tsx      # SELURUH admin SPA (single-file, sadar trade-off)
+client/src/pages/PublicReview.tsx  # form publik /r/:code
+client/src/pages/Home.tsx          # landing
+client/src/contexts/ThemeContext.tsx
+server/routers.ts                  # tRPC router (auth, public, admin)
+server/db.ts                       # semua akses DB + scoping role
+server/store.ts / store.json       # katalog 742 store + resolver receipt->store
+server/analytics.ts                # Summary Review deterministik
+server/seed.ts                     # seed demo (idempotent, target 120 review)
+server/v2/server.ts                # server v2 minimal
+shared/                            # tipe + konstanta (const.ts)
+drizzle/schema.ts + 0000..0009     # skema + migrasi
+```
+
+- `npm run dev` — dev server (tsx watch)
+- `npm run db:push` — generate migrasi + migrate dari `drizzle/schema.ts`
+- `npm run check` / `npm run test` / `npm run build` — lihat bagian Testing
+- `npm run format` — prettier
+- `npm run shadcdn add <component>` — tambah komponen shadcn/ui
